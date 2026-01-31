@@ -40,13 +40,6 @@
                         </svg>
                         <span>参照元スプレッド</span>
                     </a>
-                    <button onclick="forceRefresh()" class="menu-item refresh-item" title="データを強制更新">
-                        <svg class="refresh-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path
-                                d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" />
-                        </svg>
-                        <span>最新データを取得</span>
-                    </button>
                     <button onclick="showAboutPopup()" class="menu-item about-item" title="データについて">
                         <svg class="info-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                             <path
@@ -59,6 +52,13 @@
                             <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z" />
                         </svg>
                         <span>誤りを報告</span>
+                    </button>
+                    <button onclick="forceRefresh()" class="menu-item refresh-item" title="サーバが作成したデータを再取得するだけ。そのサーバは配信後に1回くらいしか更新しないので、あまり意味がないボタン">
+                        <svg class="refresh-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path
+                                d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" />
+                        </svg>
+                        <span>最新データを取得</span>
                     </button>
                     <div id="dataCreatedTime" style="font-size: 0.75rem;color: #a0aec0;margin-left: 33px;padding-right: 0px;margin-right: 0px;">更新日時 2026/02/01 02:02</div>
                 </div>
