@@ -919,7 +919,7 @@ function updateDataCreatedTimeDisplay() {
     if (!timeElement) return;
     
     if (!dataCreatedAt) {
-        timeElement.textContent = 'データ作成日 -';
+        timeElement.textContent = 'データ更新日 -';
         return;
     }
     
@@ -930,9 +930,9 @@ function updateDataCreatedTimeDisplay() {
         const day = String(date.getDate()).padStart(2, '0');
         const hours = String(date.getHours()).padStart(2, '0');
         const minutes = String(date.getMinutes()).padStart(2, '0');
-        const formattedTime = `データ作成日 ${year}年${month}月${day}日 ${hours}:${minutes}`;
+        const formattedTime = `${year}/${month}/${day} ${hours}:${minutes} 時点のデータ表示中`;
         timeElement.textContent = formattedTime;
     } catch (e) {
-        timeElement.textContent = 'データ作成日 -';
+        timeElement.textContent = 'データ更新日 -';
     }
 }
