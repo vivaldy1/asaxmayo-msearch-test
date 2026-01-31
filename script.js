@@ -7,6 +7,7 @@ var currentPage = 1;
 var itemsPerPage = 50;
 var reportMode = false;
 var reportingSong = null;
+var dataCreatedAt = null; // データ作成時刻を保持
 // Default Settings
 var defaultSettings = {
     searchSort: '最終演奏',
@@ -899,8 +900,39 @@ function fetchFreshSongData() {
         })
         .then(responseData => {
             // 新しい形式（createdAt + data）と旧形式（配列）の両方に対応
-            const songData = Array.isArray(responseData) ? responseData : responseData.data || [];
+            let songData, createdAt = null;
+            if (Array.isArray(responseData)) {
+                songData = responseData;
+            } else {
+                songData = responseData.data || [];
+                createdAt = responseData.createdAt || null;
+            }
+            dataCreatedAt = createdAt;
+            updateDataCreatedTimeDisplay();
             onDataLoaded(songData, false);
         })
         .catch(error => onError(error));
+}
+
+function updateDataCreatedTimeDisplay() {
+    const timeElement = document.getElementById('dataCreatedTime');
+    if (!timeElement) return;
+    
+    if (!dataCreatedAt) {
+        timeElement.textContent = '';
+        return;
+    }
+    
+    try {
+        const date = new Date(dataCreatedAt);
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        const formattedTime = `${year}年${month}月${day}日 ${hours}:${minutes}`;
+        timeElement.textContent = formattedTime;
+    } catch (e) {
+        timeElement.textContent = '';
+    }
 }
