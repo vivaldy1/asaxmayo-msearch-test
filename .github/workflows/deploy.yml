@@ -1,0 +1,70 @@
+name: Manual Deploy to Production
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+    inputs:
+      target_files:
+        description: '⚠️【本番適用】転送対象（カンマ区切りで複数指定可）'
+        required: true
+        default: '*.html, *.js, *.css'
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  # 1. 【復活】テスト環境（asaxmayo-msearch-test）への自動反映
+  deploy-test:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.'
+      - uses: actions/deploy-pages@v4
+
+  # 2. 本番環境（asaxmayo-msearch）への手動転送（バックアップ付き）
+  deploy-production:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      # ファイルの抽出
+      - name: Filter and Collect Files
+        run: |
+          mkdir dist
+          IFS=',' read -ra ADDR <<< "${{ github.event.inputs.target_files }}"
+          for i in "${ADDR[@]}"; do
+            pattern=$(echo $i | xargs)
+            cp $pattern dist/ 2>/dev/null || echo "No files found for $pattern"
+          done
+
+      # 本番リポジトリのバックアップ作成
+      - name: Create Backup Branch
+        run: |
+          git config --local --unset-all http.https://github.com/.extraheader || true
+          BACKUP_NAME="backup-$(date +'%Y%m%d-%H%M%S')"
+          git remote add target https://x-access-token:${{ secrets.MY_PAT }}@github.com/vivaldy1/asaxmayo-msearch.git
+          git fetch target main
+          git push target target/main:refs/heads/$BACKUP_NAME
+        env:
+          MY_PAT: ${{ secrets.MY_PAT }}
+
+      # 本番リポジトリのmainを更新
+      - name: Push to Production Repo
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          token: ${{ secrets.MY_PAT }}
+          repository-name: vivaldy1/asaxmayo-msearch
+          branch: main
+          folder: dist
+          clean: false
