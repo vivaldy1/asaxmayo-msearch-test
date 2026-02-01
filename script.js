@@ -8,6 +8,8 @@ var itemsPerPage = 50;
 var reportMode = false;
 var reportingSong = null;
 var dataCreatedAt = null; // データ作成時刻を保持
+var appSettings = {}; // 設定オブジェクト（loadSettings()で初期化される）
+
 // Default Settings
 var defaultSettings = {
     searchSort: '最終演奏',
@@ -27,6 +29,9 @@ var defaultSettings = {
     ]
 };
 function loadSettings() {
+    // appSettingsを必ず初期化
+    appSettings = JSON.parse(JSON.stringify(defaultSettings));
+    
     const saved = localStorage.getItem('appSettings');
     if (saved) {
         try {
@@ -40,7 +45,11 @@ function loadSettings() {
             } else if (parsed.listColumns && Array.isArray(parsed.listColumns)) {
                 appSettings.listColumns = parsed.listColumns;
             }
-        } catch (e) { console.error('Settings parse error', e); }
+        } catch (e) { 
+            console.error('Settings parse error', e);
+            // エラー時もデフォルト設定を保持
+            appSettings = JSON.parse(JSON.stringify(defaultSettings));
+        }
     }
     appSettings.settingsVersion = defaultSettings.settingsVersion;
     applySettings();
