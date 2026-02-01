@@ -839,17 +839,20 @@ window.onload = function () {
 
     initScrollToTopBtn();
     loadSettings();
-    fetch('https://script.googleusercontent.com/macros/echo?user_content_key=AehSKLg3Mh9pD1cfoLjzGKoWN85Gk3bYFpPA8-oPlNbFXDQwZSrx-7YQn1Qy7_tmEpzzorOTQow9QIbVsKVjgfXUiI3hUpHNtQaVxF5FRYozt4ziG3OutQJSWtSqXCcdeJU7a_Uhr2j0KiH3Kw9PaSSjYaZ-Pxx2MUB2AEtN-ozLj-H6GBxw8JOISVRz8QT-ziXa-lUbnL0NULykgmNlOLH-s4Jnt-Py_bQ05foDbnH9BD7EgMzudhnWfWM6yEP4M21osh0JprLH-ddjFiDhSqven0yIHGmO3cNRqPPRjvzm&lib=MXVx9ipRNFTfomE6WbanXaGJpguNqVXQJ')
+    fetch('https://vivaldy1.github.io/asaxmayo-msearch/live_streams.json?t=' + Date.now())
         .then(response => response.json())
         .then(data => {
             const ytLink = document.getElementById('ytLink');
-            if (data.liveVideoUrl && data.liveVideoUrl.trim() !== '') {
-                ytLink.href = data.liveVideoUrl;
-                ytLink.title = 'ライブ配信を開く';
-                const liveBadge = document.createElement('span');
-                liveBadge.className = 'live-badge';
-                liveBadge.textContent = 'LIVE';
-                ytLink.appendChild(liveBadge);
+            if (data.liveStreams && data.liveStreams.length > 0 && data.liveStreams[0].url) {
+                const liveUrl = data.liveStreams[0].url;
+                if (liveUrl.trim() !== '') {
+                    ytLink.href = liveUrl;
+                    ytLink.title = 'ライブ配信を開く';
+                    const liveBadge = document.createElement('span');
+                    liveBadge.className = 'live-badge';
+                    liveBadge.textContent = 'LIVE';
+                    ytLink.appendChild(liveBadge);
+                }
             }
         })
         .catch(error => console.error('ライブ配信URL取得エラー:', error));
@@ -895,9 +898,7 @@ function onError(error) {
     document.getElementById('loadingOverlay').innerHTML = '<div class="loading-text" style="color:white;">エラーが発生しました: ' + error.message + '</div><button onclick="location.reload()" style="padding:10px 20px; border-radius:5px; border:none; background:white; color:#764ba2; font-weight:bold; cursor:pointer;">再読み込み</button>';
 }
 function fetchFreshSongData() {
-    const API_URL = 'https://vivaldy1.github.io/asaxmayo-msearch/data.json?t=' + Date.now();
-    // const API_URL = 'data.json?t=' + Date.now();
-    fetch(API_URL)
+    fetch('https://vivaldy1.github.io/asaxmayo-msearch/data.json?t=' + Date.now())
         .then(response => {
             if (!response.ok) throw new Error('Network response was not ok');
             return response.json();
