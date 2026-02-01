@@ -302,13 +302,14 @@ function showModePopup() {
                     <h2>報告モードを開始しました</h2>
                 </div>
                 <div class="popup-content">
-                    <p style="text-align: center; line-height: 1.8; color: #4a5568;">
-                        報告モードになりました。<br>
-                        一覧の「報告」ボタンから、<br>
-                        または検索結果のボタンから報告できます。
+                    <p style="line-height: 1.8; color: #4a5568;">
+                        報告モードになりました。<br><br>
+                        【検索】の場合は、検索後に報告ボタンから、<br>
+                        【全曲一覧】の場合は、行を選択してから右下の⚠ボタンで報告できます。
                     </p>
                 </div>
                 <div class="popup-footer">
+                    <button class="popup-cancel-btn" onclick="toggleReportMode(); this.closest('.popup-overlay').remove();">キャンセル</button>
                     <button class="popup-ok-btn" onclick="this.closest('.popup-overlay').remove()">OK</button>
                 </div>
             </div>
@@ -823,6 +824,9 @@ document.addEventListener('DOMContentLoaded', function () {
         clearTimeout(listFilterTimeout);
         listFilterTimeout = setTimeout(filterList, 300);
     });
+    listFilter.addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') { e.preventDefault(); listFilter.blur(); }
+    });
     filterClear.addEventListener('click', function () {
         listFilter.value = '';
         updateFilterClear();
@@ -891,8 +895,8 @@ function onError(error) {
     document.getElementById('loadingOverlay').innerHTML = '<div class="loading-text" style="color:white;">エラーが発生しました: ' + error.message + '</div><button onclick="location.reload()" style="padding:10px 20px; border-radius:5px; border:none; background:white; color:#764ba2; font-weight:bold; cursor:pointer;">再読み込み</button>';
 }
 function fetchFreshSongData() {
-    // const API_URL = 'https://script.google.com/macros/s/AKfycby4dEto3Abr_bmC7nCMBjALGkxut24WTWtDoODMUWXWvx4W7TTNTqXCGQhxRT5QV8qqeA/exec';
-    const API_URL = 'data.json?t=' + Date.now();
+    const API_URL = 'https://vivaldy1.github.io/asaxmayo-msearch/data.json?t=' + Date.now();
+    // const API_URL = 'data.json?t=' + Date.now();
     fetch(API_URL)
         .then(response => {
             if (!response.ok) throw new Error('Network response was not ok');
