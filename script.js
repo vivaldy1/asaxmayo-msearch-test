@@ -1162,6 +1162,23 @@ function applyTagFilter() {
     performSearch();
 }
 
+function resetTagFilter() {
+    // フィルターをリセット
+    selectedSeasons = [];
+    selectedGenres = [];
+    
+    // UI上の選択状態をリセット
+    const seasonOptions = document.getElementById('seasonFilterOptions');
+    seasonOptions.querySelectorAll('.tag-filter-option').forEach(btn => {
+        btn.classList.remove('selected');
+    });
+    
+    const genreOptions = document.getElementById('genreFilterOptions');
+    genreOptions.querySelectorAll('.tag-filter-option').forEach(btn => {
+        btn.classList.remove('selected');
+    });
+}
+
 function updateTagButtonAppearance() {
     const tagBtn = document.getElementById('tagFilterBtn');
     if (selectedSeasons.length > 0 || selectedGenres.length > 0) {
