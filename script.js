@@ -14,30 +14,56 @@ var defaultSettings = {
     searchLimit: 50,
     horizontalScroll: false,
     showTags: false,
+    settingsVersion: 1, // 設定バージョン（移行時に使用）
     listColumns: [
         { key: '曲名', label: '曲名', visible: true },
         { key: 'アーティスト', label: 'アーティスト', visible: true },
         { key: '最終演奏', label: '最終演奏', visible: true },
         { key: '演奏回数', label: '回数', visible: true },
-        { key: 'タグ', label: 'タグ', visible: false },
         { key: '曲名の読み', label: '曲名よみがな', visible: false },
         { key: 'アーティストの読み', label: '歌手よみがな', visible: false },
-        { key: 'タイアップ', label: 'タイアップ', visible: false }
+        { key: 'タイアップ', label: 'タイアップ', visible: false },
+        { key: 'タグ', label: 'タグ', visible: false }
     ]
 };
-var appSettings = JSON.parse(JSON.stringify(defaultSettings));
 function loadSettings() {
     const saved = localStorage.getItem('appSettings');
     if (saved) {
         try {
             const parsed = JSON.parse(saved);
             appSettings = { ...defaultSettings, ...parsed };
-            if (parsed.listColumns && Array.isArray(parsed.listColumns)) {
+            
+            // 設定バージョンをチェック（タグ機能追加時の移行処理）
+            if (!parsed.settingsVersion || parsed.settingsVersion < defaultSettings.settingsVersion) {
+                // 古い設定から新しい設定への移行
+                migrateSettings(parsed);
+            } else if (parsed.listColumns && Array.isArray(parsed.listColumns)) {
                 appSettings.listColumns = parsed.listColumns;
             }
         } catch (e) { console.error('Settings parse error', e); }
     }
+    appSettings.settingsVersion = defaultSettings.settingsVersion;
     applySettings();
+}
+
+function migrateSettings(oldSettings) {
+    // 古い設定にタグ列がない場合は追加
+    if (oldSettings.listColumns && Array.isArray(oldSettings.listColumns)) {
+        const hasTagColumn = oldSettings.listColumns.some(col => col.key === 'タグ');
+        
+        if (!hasTagColumn) {
+            // タグ列を追加（デフォルト位置：非表示）
+            appSettings.listColumns = [
+                ...oldSettings.listColumns,
+                { key: 'タグ', label: 'タグ', visible: false }
+            ];
+        } else {
+            appSettings.listColumns = oldSettings.listColumns;
+        }
+    } else {
+        // listColumnsがない場合はデフォルトを使用
+        appSettings.listColumns = defaultSettings.listColumns;
+    }
 }
 function saveSettings() {
     appSettings.searchSort = document.getElementById('settingSearchSort').value;
@@ -61,6 +87,7 @@ function saveSettings() {
         }
     });
     appSettings.listColumns = newCols;
+    appSettings.settingsVersion = defaultSettings.settingsVersion; // バージョン更新
     localStorage.setItem('appSettings', JSON.stringify(appSettings));
     closeSettingsPopup();
     applySettings();
@@ -993,21 +1020,37 @@ const tagColors = [
 function getTagColor(tagValue, isGenre = false) {
     if (!tagValue || !tagValue.trim()) return { bg: '#f0f0f0', text: '#666' };
     
-    const key = (isGenre ? 'g_' : 's_') + tagValue;
-    if (!tagColorMap[key]) {
-        const colorIndex = Object.keys(tagColorMap).length % tagColors.length;
-        tagColorMap[key] = colorIndex;
+    // キーの作成（常に一貫性を保つ）
+    const key = (isGenre ? 'g_' : 's_') + tagValue.trim();
+    
+    // 既にキャッシュされているなら返す
+    if (tagColorMap[key] !== undefined) {
+        return tagColors[tagColorMap[key]];
     }
-    return tagColors[tagColorMap[key]];
+    
+    // 新しいタグの場合、色を割り当て（ハッシュ値に基づく一貫性）
+    // 同じキーは常に同じ色を返すようにする
+    let hashCode = 0;
+    for (let i = 0; i < key.length; i++) {
+        hashCode = ((hashCode << 5) - hashCode) + key.charCodeAt(i);
+        hashCode = hashCode & hashCode; // 32-bit integer
+    }
+    
+    const colorIndex = Math.abs(hashCode) % tagColors.length;
+    tagColorMap[key] = colorIndex;
+    
+    return tagColors[colorIndex];
 }
 
 function extractAllTags() {
-    const seasons = new Set();
+    const seasonOrder = ['春', '夏', '秋', '冬']; // 季節の固定順序
+    const seasonCount = {}; // 季節の重複件数をカウント
     const genreCount = {}; // ジャンルの重複件数をカウント
     
     allSongs.forEach(song => {
         if (song['季節'] && song['季節'].trim()) {
-            seasons.add(song['季節'].trim());
+            const season = song['季節'].trim();
+            seasonCount[season] = (seasonCount[season] || 0) + 1;
         }
         if (song['ジャンル1'] && song['ジャンル1'].trim()) {
             const genre = song['ジャンル1'].trim();
@@ -1019,6 +1062,14 @@ function extractAllTags() {
         }
     });
     
+    // 季節を春夏秋冬の固定順で整列
+    const sortedSeasons = seasonOrder
+        .filter(season => seasonCount[season]) // データに存在する季節のみ
+        .map(season => ({
+            name: season,
+            count: seasonCount[season]
+        }));
+    
     // ジャンルを件数でソート（降順）
     const sortedGenres = Object.entries(genreCount)
         .sort((a, b) => b[1] - a[1])
@@ -1028,7 +1079,7 @@ function extractAllTags() {
         }));
     
     return {
-        seasons: Array.from(seasons).sort(),
+        seasons: sortedSeasons,
         genres: sortedGenres
     };
 }
@@ -1036,11 +1087,13 @@ function extractAllTags() {
 function showTagFilterPopup() {
     const tags = extractAllTags();
     
-    // Season options
+    // Season options (with count)
     const seasonOptions = document.getElementById('seasonFilterOptions');
     seasonOptions.innerHTML = '';
-    tags.seasons.forEach(season => {
-        seasonOptions.innerHTML += `<button class="tag-filter-option" data-value="${season}" onclick="toggleSeasonFilter(this, '${season}')">${season}</button>`;
+    tags.seasons.forEach(seasonObj => {
+        const season = seasonObj.name;
+        const count = seasonObj.count;
+        seasonOptions.innerHTML += `<button class="tag-filter-option" data-value="${season}" onclick="toggleSeasonFilter(this, '${season}')">${season}(${count})</button>`;
     });
     
     // Genre options (with count)
