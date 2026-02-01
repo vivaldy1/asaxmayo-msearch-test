@@ -13,11 +13,13 @@ var defaultSettings = {
     searchSort: '最終演奏',
     searchLimit: 50,
     horizontalScroll: false,
+    showTags: false,
     listColumns: [
         { key: '曲名', label: '曲名', visible: true },
         { key: 'アーティスト', label: 'アーティスト', visible: true },
         { key: '最終演奏', label: '最終演奏', visible: true },
         { key: '演奏回数', label: '回数', visible: true },
+        { key: 'タグ', label: 'タグ', visible: false },
         { key: '曲名の読み', label: '曲名よみがな', visible: false },
         { key: 'アーティストの読み', label: '歌手よみがな', visible: false },
         { key: 'タイアップ', label: 'タイアップ', visible: false }
@@ -52,6 +54,11 @@ function saveSettings() {
         const visible = item.querySelector('input[type="checkbox"]').checked;
         const label = item.querySelector('.column-name').textContent;
         newCols.push({ key: key, label: label, visible: visible });
+        
+        // タグ列の表示状態を appSettings.showTags に反映
+        if (key === 'タグ') {
+            appSettings.showTags = visible;
+        }
     });
     appSettings.listColumns = newCols;
     localStorage.setItem('appSettings', JSON.stringify(appSettings));
@@ -520,24 +527,37 @@ function performSearch() {
     var countSpan = document.getElementById('resultCountInline');
     var noResults = document.getElementById('noSearchResults');
     resultsDiv.innerHTML = '';
-    if (!query) {
+    
+    // キーワードなし且つタグも選択なし → 何も表示しない
+    if (!query && selectedSeasons.length === 0 && selectedGenres.length === 0) {
         countSpan.textContent = '';
         noResults.style.display = 'none';
         return;
     }
+    
     let results = allSongs.filter(song => {
+        // タグフィルターを先に確認
+        if (!matchesTags(song)) return false;
+        
+        // キーワード入力がなければタグマッチのみで通す
+        if (!query) return true;
+        
         const title = (song['曲名'] || '').toLowerCase();
         const titleYomi = (song['曲名の読み'] || '').toLowerCase().replace(/ /g, '');
         const artist = (song['アーティスト'] || '').toLowerCase();
         const artistYomi = (song['アーティストの読み'] || '').toLowerCase().replace(/ /g, '');
         const tieup = (song['タイアップ'] || '').toLowerCase();
-        if (searchType === 'song') return title.includes(queryLower) || titleYomi.includes(queryLower);
-        if (searchType === 'artist') return artist.includes(queryLower) || artistYomi.includes(queryLower);
-        if (searchType === 'tieup') return tieup.includes(queryLower);
-        return title.includes(queryLower) || titleYomi.includes(queryLower) ||
+        let keywordMatch = false;
+        if (searchType === 'song') keywordMatch = title.includes(queryLower) || titleYomi.includes(queryLower);
+        else if (searchType === 'artist') keywordMatch = artist.includes(queryLower) || artistYomi.includes(queryLower);
+        else if (searchType === 'tieup') keywordMatch = tieup.includes(queryLower);
+        else keywordMatch = title.includes(queryLower) || titleYomi.includes(queryLower) ||
             artist.includes(queryLower) || artistYomi.includes(queryLower) ||
             tieup.includes(queryLower);
+        
+        return keywordMatch;
     });
+    
     if (appSettings && appSettings.searchSort) {
         const key = appSettings.searchSort;
         const asc = (key !== '最終演奏' && key !== '演奏回数');
@@ -550,6 +570,7 @@ function performSearch() {
             return 0;
         });
     }
+    
     if (results.length === 0) {
         countSpan.textContent = '0件';
         noResults.style.display = 'block';
@@ -589,6 +610,7 @@ function createResultItem(song, query) {
     const copyText = title + '／' + artist;
     let yomiDisplay = (titleYomi || artistYomi) ? `<div class="song-yomi">${hTitleYomi} ${artistYomi ? '/ ' + hArtistYomi : ''}</div>` : '';
     let tieupDisplay = tieup ? `<div class="song-tieup"><div class="tv-icon-20"></div><span>${hTieup}</span></div>` : '';
+    const tagsDisplay = createTagsHTML(song);
     let buttonHTML = '';
     if (reportMode) {
         const songIndex = allSongs.indexOf(song);
@@ -607,6 +629,7 @@ function createResultItem(song, query) {
                   <span>最終演奏: ${date}</span>
                 </div>`
         }
+            ${tagsDisplay}
             ${buttonHTML}
         </div>
       `;
@@ -708,12 +731,18 @@ function renderListTable() {
         }
         appSettings.listColumns.forEach(col => {
             if (col.visible || reportMode) {
-                let val = song[col.key];
-                let displayVal = escapeHtml(val);
-                if (col.key === '最終演奏') {
-                    displayVal = `<span style="font-size:0.9em; color:#666;">${val ? formatDate(val) : '-'}</span>`;
-                } else if (col.key === '演奏回数') {
-                    displayVal = `<div style="text-align:center;">${val || 0}</div>`;
+                let displayVal = '';
+                if (col.key === 'タグ') {
+                    // タグ列
+                    displayVal = createTagsHTML(song);
+                } else {
+                    let val = song[col.key];
+                    displayVal = escapeHtml(val);
+                    if (col.key === '最終演奏') {
+                        displayVal = `<span style="font-size:0.9em; color:#666;">${val ? formatDate(val) : '-'}</span>`;
+                    } else if (col.key === '演奏回数') {
+                        displayVal = `<div style="text-align:center;">${val || 0}</div>`;
+                    }
                 }
                 rowHtml += `<td>${displayVal}</td>`;
             }
@@ -940,4 +969,227 @@ function updateDataCreatedTimeDisplay() {
     } catch (e) {
         timeElement.textContent = '';
     }
+}
+
+// Tag Filter functionality
+var selectedSeasons = [];
+var selectedGenres = [];
+var tagColorMap = {}; // Maps tag values to color indices
+
+// Color palette for tags
+const tagColors = [
+    { bg: '#FFE0B2', text: '#E65100' }, // Orange
+    { bg: '#C8E6C9', text: '#1B5E20' }, // Green
+    { bg: '#BBDEFB', text: '#0D47A1' }, // Blue
+    { bg: '#F8BBD0', text: '#880E4F' }, // Pink
+    { bg: '#B3E5FC', text: '#01579B' }, // Light Blue
+    { bg: '#E1BEE7', text: '#4A148C' }, // Purple
+    { bg: '#C5CAE9', text: '#1A237E' }, // Indigo
+    { bg: '#FFE0B2', text: '#BF360C' }, // Deep Orange
+    { bg: '#F0F4C3', text: '#33691E' }, // Light Green
+    { bg: '#FCE4EC', text: '#C2185B' }, // Rose
+];
+
+function getTagColor(tagValue, isGenre = false) {
+    if (!tagValue || !tagValue.trim()) return { bg: '#f0f0f0', text: '#666' };
+    
+    const key = (isGenre ? 'g_' : 's_') + tagValue;
+    if (!tagColorMap[key]) {
+        const colorIndex = Object.keys(tagColorMap).length % tagColors.length;
+        tagColorMap[key] = colorIndex;
+    }
+    return tagColors[tagColorMap[key]];
+}
+
+function extractAllTags() {
+    const seasons = new Set();
+    const genreCount = {}; // ジャンルの重複件数をカウント
+    
+    allSongs.forEach(song => {
+        if (song['季節'] && song['季節'].trim()) {
+            seasons.add(song['季節'].trim());
+        }
+        if (song['ジャンル1'] && song['ジャンル1'].trim()) {
+            const genre = song['ジャンル1'].trim();
+            genreCount[genre] = (genreCount[genre] || 0) + 1;
+        }
+        if (song['ジャンル2'] && song['ジャンル2'].trim()) {
+            const genre = song['ジャンル2'].trim();
+            genreCount[genre] = (genreCount[genre] || 0) + 1;
+        }
+    });
+    
+    // ジャンルを件数でソート（降順）
+    const sortedGenres = Object.entries(genreCount)
+        .sort((a, b) => b[1] - a[1])
+        .map(entry => ({
+            name: entry[0],
+            count: entry[1]
+        }));
+    
+    return {
+        seasons: Array.from(seasons).sort(),
+        genres: sortedGenres
+    };
+}
+
+function showTagFilterPopup() {
+    const tags = extractAllTags();
+    
+    // Season options
+    const seasonOptions = document.getElementById('seasonFilterOptions');
+    seasonOptions.innerHTML = '';
+    tags.seasons.forEach(season => {
+        seasonOptions.innerHTML += `<button class="tag-filter-option" data-value="${season}" onclick="toggleSeasonFilter(this, '${season}')">${season}</button>`;
+    });
+    
+    // Genre options (with count)
+    const genreOptions = document.getElementById('genreFilterOptions');
+    genreOptions.innerHTML = '';
+    tags.genres.forEach(genreObj => {
+        const genre = genreObj.name;
+        const count = genreObj.count;
+        genreOptions.innerHTML += `<button class="tag-filter-option" data-value="${genre}" onclick="toggleGenreFilter(this, '${genre}')">${genre}(${count})</button>`;
+    });
+    
+    // Reset button states based on current filters
+    if (selectedSeasons.length > 0) {
+        selectedSeasons.forEach(season => {
+            const btn = seasonOptions.querySelector(`[data-value="${season}"]`);
+            if (btn) btn.classList.add('selected');
+        });
+    }
+    
+    if (selectedGenres.length > 0) {
+        selectedGenres.forEach(genre => {
+            const btn = genreOptions.querySelector(`[data-value="${genre}"]`);
+            if (btn) btn.classList.add('selected');
+        });
+    }
+    
+    document.getElementById('tagFilterPopup').classList.remove('hidden');
+}
+
+function toggleSeasonFilter(btn, season) {
+    if (btn.classList.contains('selected')) {
+        btn.classList.remove('selected');
+        selectedSeasons = selectedSeasons.filter(s => s !== season);
+    } else {
+        btn.classList.add('selected');
+        if (!selectedSeasons.includes(season)) {
+            selectedSeasons.push(season);
+        }
+    }
+}
+
+function toggleGenreFilter(btn, genre) {
+    if (btn.classList.contains('selected')) {
+        btn.classList.remove('selected');
+        selectedGenres = selectedGenres.filter(g => g !== genre);
+    } else {
+        btn.classList.add('selected');
+        if (!selectedGenres.includes(genre)) {
+            selectedGenres.push(genre);
+        }
+    }
+}
+
+function applyTagFilter() {
+    closeTagFilterPopup();
+    updateTagButtonAppearance();
+    performSearch();
+}
+
+function updateTagButtonAppearance() {
+    const tagBtn = document.getElementById('tagFilterBtn');
+    if (selectedSeasons.length > 0 || selectedGenres.length > 0) {
+        // タグが選択されている場合は色を変更
+        tagBtn.style.backgroundColor = '#667eea';
+        tagBtn.style.borderColor = '#667eea';
+        tagBtn.style.color = 'white';
+    } else {
+        // タグが選択されていない場合は通常状態
+        tagBtn.style.backgroundColor = 'white';
+        tagBtn.style.borderColor = '#e2e8f0';
+        tagBtn.style.color = '#718096';
+    }
+}
+
+function closeTagFilterPopup(event) {
+    if (event && event.target.id !== 'tagFilterPopup') return;
+    document.getElementById('tagFilterPopup').classList.add('hidden');
+}
+
+function matchesTags(song) {
+    // If no filters selected, all songs match
+    if (selectedSeasons.length === 0 && selectedGenres.length === 0) {
+        return true;
+    }
+    
+    let seasonMatch = selectedSeasons.length === 0;
+    if (selectedSeasons.length > 0) {
+        const songSeason = song['季節'] ? song['季節'].trim() : '';
+        seasonMatch = selectedSeasons.includes(songSeason);
+    }
+    
+    let genreMatch = selectedGenres.length === 0;
+    if (selectedGenres.length > 0) {
+        const songGenres = [
+            song['ジャンル1'] ? song['ジャンル1'].trim() : '',
+            song['ジャンル2'] ? song['ジャンル2'].trim() : ''
+        ];
+        genreMatch = selectedGenres.some(genre => songGenres.includes(genre));
+    }
+    
+    return seasonMatch && genreMatch;
+}
+
+function createTagsHTML(song) {
+    let html = '<div class="tag-container">';
+    
+    if (song['季節'] && song['季節'].trim()) {
+        const tagValue = song['季節'].trim();
+        const color = getTagColor(tagValue, false);
+        html += `<span class="tag" style="background-color: ${color.bg}; color: ${color.text};">${tagValue}</span>`;
+    }
+    
+    if (song['ジャンル1'] && song['ジャンル1'].trim()) {
+        const tagValue = song['ジャンル1'].trim();
+        const color = getTagColor(tagValue, true);
+        html += `<span class="tag" style="background-color: ${color.bg}; color: ${color.text};">${tagValue}</span>`;
+    }
+    
+    if (song['ジャンル2'] && song['ジャンル2'].trim()) {
+        const tagValue = song['ジャンル2'].trim();
+        const color = getTagColor(tagValue, true);
+        html += `<span class="tag" style="background-color: ${color.bg}; color: ${color.text};">${tagValue}</span>`;
+    }
+    
+    html += '</div>';
+    return html;
+}
+
+function createTagsInlineHTML(song) {
+    let html = '<div class="tag-container-inline">';
+    
+    if (song['季節'] && song['季節'].trim()) {
+        const tagValue = song['季節'].trim();
+        const color = getTagColor(tagValue, false);
+        html += `<span class="tag-inline" style="background-color: ${color.bg}; color: ${color.text};">${tagValue}</span>`;
+    }
+    
+    if (song['ジャンル1'] && song['ジャンル1'].trim()) {
+        const tagValue = song['ジャンル1'].trim();
+        const color = getTagColor(tagValue, true);
+        html += `<span class="tag-inline" style="background-color: ${color.bg}; color: ${color.text};">${tagValue}</span>`;
+    }
+    
+    if (song['ジャンル2'] && song['ジャンル2'].trim()) {
+        const tagValue = song['ジャンル2'].trim();
+        const color = getTagColor(tagValue, true);
+        html += `<span class="tag-inline" style="background-color: ${color.bg}; color: ${color.text};">${tagValue}</span>`;
+    }
+    
+    html += '</div>';
+    return html;
 }
