@@ -16,7 +16,7 @@ var defaultSettings = {
     searchLimit: 50,
     horizontalScroll: false,
     showTags: false,
-    settingsVersion: 1, // 設定バージョン（移行時に使用）
+    settingsVersion: 2, // 設定バージョン（移行時に使用）
     listColumns: [
         { key: '曲名', label: '曲名', visible: true },
         { key: 'アーティスト', label: 'アーティスト', visible: true },
@@ -565,7 +565,7 @@ function performSearch() {
     resultsDiv.innerHTML = '';
     
     // キーワードなし且つタグも選択なし → 何も表示しない
-    if (!query && selectedSeasons.length === 0 && selectedGenres.length === 0) {
+    if (!query && selectedSeasons.length === 0 && selectedGenres.length === 0 && selectedDecades.length === 0) {
         countSpan.textContent = '';
         noResults.style.display = 'none';
         return;
@@ -652,7 +652,11 @@ function createResultItem(song, query) {
         const songIndex = allSongs.indexOf(song);
         buttonHTML = `<button class="copy-button report-button" onclick="openReportPopupByIndex(${songIndex})">報告</button>`;
     } else {
-        buttonHTML = `<button class="copy-button" onclick="copyToClipboard('${escapeQuotes(copyText)}')">コピー</button>`;
+        const songIndex = allSongs.indexOf(song);
+        buttonHTML = `
+            <button class="copy-button" onclick="openSongDetail(${songIndex})" style="background-color: #e6f0ff; border-color: #667eea; color: #667eea; right: 90px;">詳細</button>
+            <button class="copy-button" onclick="copyToClipboard('${escapeQuotes(copyText)}')">コピー</button>
+        `;
     }
     return `
         <div class="result-item">
@@ -838,6 +842,25 @@ function escapeHtml(text) {
     return String(text ?? '').replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
 }
 function escapeQuotes(text) { return text.replace(/'/g, "\\'").replace(/"/g, '\\"'); }
+
+// ISO形式の日付をYYYY/MM/DD形式にフォーマット
+function formatDate(dateStr) {
+    if (!dateStr || typeof dateStr !== 'string') return dateStr;
+    // ISO形式（2026-01-20T14:02:04.000Z）を処理
+    if (dateStr.includes('T')) {
+        const date = new Date(dateStr);
+        if (!isNaN(date.getTime())) {
+            const year = date.getUTCFullYear();
+            const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+            const day = String(date.getUTCDate()).padStart(2, '0');
+            return `${year}/${month}/${day}`;
+        }
+    }
+    // すでにYYYY/MM/DD形式の場合はそのまま返す
+    if (dateStr.match(/^\d{4}\/\d{2}\/\d{2}$/)) return dateStr;
+    return dateStr;
+}
+
 function copyToClipboard(text) {
     if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(text).then(showCopyToast).catch(() => fallbackCopy(text));
@@ -1010,6 +1033,7 @@ function updateDataCreatedTimeDisplay() {
 // Tag Filter functionality
 var selectedSeasons = [];
 var selectedGenres = [];
+var selectedDecades = []; // 年代フィルター用
 var tagColorMap = {}; // Maps tag values to color indices
 
 // Color palette for tags
@@ -1055,6 +1079,7 @@ function extractAllTags() {
     const seasonOrder = ['春', '夏', '秋', '冬']; // 季節の固定順序
     const seasonCount = {}; // 季節の重複件数をカウント
     const genreCount = {}; // ジャンルの重複件数をカウント
+    const decadeCount = {}; // 年代の重複件数をカウント
     
     allSongs.forEach(song => {
         if (song['季節'] && song['季節'].trim()) {
@@ -1068,6 +1093,20 @@ function extractAllTags() {
         if (song['ジャンル2'] && song['ジャンル2'].trim()) {
             const genre = song['ジャンル2'].trim();
             genreCount[genre] = (genreCount[genre] || 0) + 1;
+        }
+        if (song['ジャンル3'] && song['ジャンル3'].trim()) {
+            const genre = song['ジャンル3'].trim();
+            genreCount[genre] = (genreCount[genre] || 0) + 1;
+        }
+        
+        // 年代を計算
+        if (song['リリース日'] && song['リリース日'].trim()) {
+            const year = parseInt(song['リリース日'].substring(0, 4), 10);
+            if (!isNaN(year)) {
+                const decade = Math.floor(year / 10) * 10;
+                const decadeLabel = decade + '年代';
+                decadeCount[decadeLabel] = (decadeCount[decadeLabel] || 0) + 1;
+            }
         }
     });
     
@@ -1087,9 +1126,18 @@ function extractAllTags() {
             count: entry[1]
         }));
     
+    // 年代を昇順でソート
+    const sortedDecades = Object.entries(decadeCount)
+        .sort((a, b) => a[0].localeCompare(b[0], 'ja'))
+        .map(entry => ({
+            name: entry[0],
+            count: entry[1]
+        }));
+    
     return {
         seasons: sortedSeasons,
-        genres: sortedGenres
+        genres: sortedGenres,
+        decades: sortedDecades
     };
 }
 
@@ -1114,6 +1162,17 @@ function showTagFilterPopup() {
         genreOptions.innerHTML += `<button class="tag-filter-option" data-value="${genre}" onclick="toggleGenreFilter(this, '${genre}')">${genre}(${count})</button>`;
     });
     
+    // Decade options (with count)
+    const decadeOptions = document.getElementById('decadeFilterOptions');
+    if (decadeOptions) {
+        decadeOptions.innerHTML = '';
+        tags.decades.forEach(decadeObj => {
+            const decade = decadeObj.name;
+            const count = decadeObj.count;
+            decadeOptions.innerHTML += `<button class="tag-filter-option" data-value="${decade}" onclick="toggleDecadeFilter(this, '${decade}')">${decade}(${count})</button>`;
+        });
+    }
+    
     // Reset button states based on current filters
     if (selectedSeasons.length > 0) {
         selectedSeasons.forEach(season => {
@@ -1125,6 +1184,13 @@ function showTagFilterPopup() {
     if (selectedGenres.length > 0) {
         selectedGenres.forEach(genre => {
             const btn = genreOptions.querySelector(`[data-value="${genre}"]`);
+            if (btn) btn.classList.add('selected');
+        });
+    }
+    
+    if (selectedDecades.length > 0 && decadeOptions) {
+        selectedDecades.forEach(decade => {
+            const btn = decadeOptions.querySelector(`[data-value="${decade}"]`);
             if (btn) btn.classList.add('selected');
         });
     }
@@ -1156,6 +1222,18 @@ function toggleGenreFilter(btn, genre) {
     }
 }
 
+function toggleDecadeFilter(btn, decade) {
+    if (btn.classList.contains('selected')) {
+        btn.classList.remove('selected');
+        selectedDecades = selectedDecades.filter(d => d !== decade);
+    } else {
+        btn.classList.add('selected');
+        if (!selectedDecades.includes(decade)) {
+            selectedDecades.push(decade);
+        }
+    }
+}
+
 function applyTagFilter() {
     closeTagFilterPopup();
     updateTagButtonAppearance();
@@ -1166,6 +1244,7 @@ function resetTagFilter() {
     // フィルターをリセット
     selectedSeasons = [];
     selectedGenres = [];
+    selectedDecades = [];
     
     // UI上の選択状態をリセット
     const seasonOptions = document.getElementById('seasonFilterOptions');
@@ -1177,11 +1256,18 @@ function resetTagFilter() {
     genreOptions.querySelectorAll('.tag-filter-option').forEach(btn => {
         btn.classList.remove('selected');
     });
+    
+    const decadeOptions = document.getElementById('decadeFilterOptions');
+    if (decadeOptions) {
+        decadeOptions.querySelectorAll('.tag-filter-option').forEach(btn => {
+            btn.classList.remove('selected');
+        });
+    }
 }
 
 function updateTagButtonAppearance() {
     const tagBtn = document.getElementById('tagFilterBtn');
-    if (selectedSeasons.length > 0 || selectedGenres.length > 0) {
+    if (selectedSeasons.length > 0 || selectedGenres.length > 0 || selectedDecades.length > 0) {
         // タグが選択されている場合は色を変更
         tagBtn.style.backgroundColor = '#667eea';
         tagBtn.style.borderColor = '#667eea';
@@ -1201,7 +1287,7 @@ function closeTagFilterPopup(event) {
 
 function matchesTags(song) {
     // If no filters selected, all songs match
-    if (selectedSeasons.length === 0 && selectedGenres.length === 0) {
+    if (selectedSeasons.length === 0 && selectedGenres.length === 0 && selectedDecades.length === 0) {
         return true;
     }
     
@@ -1215,12 +1301,26 @@ function matchesTags(song) {
     if (selectedGenres.length > 0) {
         const songGenres = [
             song['ジャンル1'] ? song['ジャンル1'].trim() : '',
-            song['ジャンル2'] ? song['ジャンル2'].trim() : ''
+            song['ジャンル2'] ? song['ジャンル2'].trim() : '',
+            song['ジャンル3'] ? song['ジャンル3'].trim() : ''
         ];
         genreMatch = selectedGenres.some(genre => songGenres.includes(genre));
     }
     
-    return seasonMatch && genreMatch;
+    let decadeMatch = selectedDecades.length === 0;
+    if (selectedDecades.length > 0) {
+        const releaseDate = song['リリース日'] ? song['リリース日'].trim() : '';
+        if (releaseDate) {
+            const year = parseInt(releaseDate.substring(0, 4), 10);
+            if (!isNaN(year)) {
+                const decade = Math.floor(year / 10) * 10;
+                const decadeLabel = decade + '年代';
+                decadeMatch = selectedDecades.includes(decadeLabel);
+            }
+        }
+    }
+    
+    return seasonMatch && genreMatch && decadeMatch;
 }
 
 function createTagsHTML(song) {
@@ -1240,6 +1340,12 @@ function createTagsHTML(song) {
     
     if (song['ジャンル2'] && song['ジャンル2'].trim()) {
         const tagValue = song['ジャンル2'].trim();
+        const color = getTagColor(tagValue, true);
+        html += `<span class="tag" style="background-color: ${color.bg}; color: ${color.text};">${tagValue}</span>`;
+    }
+    
+    if (song['ジャンル3'] && song['ジャンル3'].trim()) {
+        const tagValue = song['ジャンル3'].trim();
         const color = getTagColor(tagValue, true);
         html += `<span class="tag" style="background-color: ${color.bg}; color: ${color.text};">${tagValue}</span>`;
     }
@@ -1269,6 +1375,147 @@ function createTagsInlineHTML(song) {
         html += `<span class="tag-inline" style="background-color: ${color.bg}; color: ${color.text};">${tagValue}</span>`;
     }
     
+    if (song['ジャンル3'] && song['ジャンル3'].trim()) {
+        const tagValue = song['ジャンル3'].trim();
+        const color = getTagColor(tagValue, true);
+        html += `<span class="tag-inline" style="background-color: ${color.bg}; color: ${color.text};">${tagValue}</span>`;
+    }
+    
     html += '</div>';
     return html;
+}
+
+// Song Detail Modal Functions
+function openSongDetail(songIndex) {
+    const song = allSongs[songIndex];
+    if (!song) return;
+    
+    const content = document.getElementById('songDetailContent');
+    
+    // ロボットSVG
+    const robotSVG = `<svg width="32" height="32" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" style="display: inline; vertical-align: text-bottom;">
+        <g fill="currentColor">
+            <path d="M117.92,392.698h0.082h275.944h0.082c9.531,0,17.257-7.73,17.257-17.26v-0.078V174.47V163.81   c0-9.574-7.765-17.339-17.338-17.339h-10.66H128.662h-10.659c-9.574,0-17.339,7.766-17.339,17.339v10.659v200.89v0.078   C100.664,384.969,108.39,392.698,117.92,392.698z M247.616,279.342v-24.635h16.718v24.635H247.616z M311.924,269.406   c-0.41-0.031-0.824-0.035-1.226-0.082c-3.453-0.426-6.726-1.398-9.742-2.839c-0.195-0.094-0.383-0.199-0.578-0.297   c-1.363-0.692-2.675-1.465-3.918-2.34c-0.133-0.09-0.266-0.18-0.394-0.274c-9.839-7.132-15.421-19.784-12.152-33.392   c0.004-0.024,0.012-0.043,0.012-0.063c0.946-3.902,2.617-7.886,5.125-11.835c1.48-2.331,3.492-4.343,5.824-5.823   c3.789-2.402,7.601-3.992,11.35-4.957c0.394-0.098,0.793-0.188,1.184-0.274c1.418-0.309,2.816-0.512,4.202-0.637   c0.469-0.039,0.942-0.106,1.406-0.129c1.621-0.078,3.218-0.043,4.781,0.117c0.258,0.028,0.508,0.059,0.762,0.094   c1.481,0.187,2.918,0.484,4.324,0.867c0.598,0.164,1.172,0.374,1.75,0.574c0.961,0.325,1.906,0.68,2.82,1.094   c0.586,0.262,1.168,0.535,1.734,0.832c0.93,0.489,1.816,1.031,2.687,1.602c0.453,0.301,0.926,0.574,1.363,0.894   c1.238,0.91,2.422,1.898,3.515,2.981c0.27,0.266,0.504,0.574,0.766,0.851c0.832,0.879,1.621,1.793,2.344,2.766   c0.332,0.442,0.636,0.906,0.945,1.371c0.598,0.894,1.152,1.824,1.66,2.785c0.254,0.48,0.512,0.957,0.742,1.453   c0.539,1.16,0.996,2.363,1.39,3.594c0.106,0.317,0.242,0.617,0.336,0.942c0.446,1.554,0.758,3.16,0.961,4.8   c0.058,0.45,0.058,0.914,0.094,1.371c0.094,1.129,0.118,2.274,0.086,3.434c-0.039,1.34-0.196,2.644-0.398,3.941   c-0.102,0.672-0.164,1.336-0.305,2.016c-2.656,11.941-12.054,21.326-24.046,23.963c-0.614,0.125-1.214,0.183-1.82,0.278   c-1.344,0.214-2.703,0.37-4.098,0.41C314.236,269.522,313.068,269.503,311.924,269.406z M319.049,309.903v28.638H192.9v-28.638   h125.926H319.049z M215.888,263.574c-0.13,0.094-0.266,0.184-0.399,0.274c-1.242,0.871-2.554,1.648-3.918,2.336   c-0.195,0.098-0.382,0.206-0.578,0.301c-3.016,1.441-6.289,2.414-9.742,2.839c-0.402,0.047-0.817,0.051-1.226,0.082   c-1.145,0.098-2.313,0.117-3.488,0.086c-1.395-0.039-2.754-0.195-4.098-0.41c-0.606-0.094-1.207-0.153-1.82-0.278   c-11.992-2.637-21.39-12.022-24.046-23.963c-0.141-0.68-0.203-1.344-0.305-2.016c-0.203-1.297-0.359-2.601-0.398-3.941   c-0.031-1.16-0.008-2.305,0.086-3.434c0.035-0.457,0.035-0.922,0.094-1.371c0.203-1.64,0.516-3.246,0.962-4.8   c0.094-0.325,0.23-0.625,0.335-0.942c0.395-1.23,0.852-2.434,1.391-3.594c0.23-0.496,0.488-0.973,0.742-1.453   c0.508-0.961,1.062-1.89,1.66-2.785c0.309-0.465,0.614-0.93,0.946-1.371c0.722-0.969,1.512-1.883,2.34-2.758   c0.262-0.282,0.5-0.59,0.773-0.863c1.094-1.078,2.274-2.066,3.512-2.977c0.441-0.324,0.914-0.598,1.37-0.894   c0.867-0.57,1.75-1.113,2.676-1.598c0.566-0.301,1.152-0.574,1.738-0.84c0.914-0.41,1.859-0.765,2.82-1.09   c0.578-0.195,1.152-0.41,1.75-0.574c1.406-0.383,2.844-0.68,4.324-0.867c0.254-0.035,0.504-0.066,0.762-0.094   c1.562-0.16,3.16-0.195,4.782-0.117c0.465,0.023,0.937,0.09,1.406,0.129c1.387,0.125,2.789,0.328,4.203,0.637   c0.39,0.086,0.789,0.176,1.179,0.274c3.75,0.965,7.566,2.554,11.355,4.957c2.332,1.48,4.343,3.492,5.824,5.823   c2.507,3.95,4.175,7.93,5.121,11.832c0.003,0.023,0.011,0.046,0.019,0.066C231.304,243.794,225.723,256.442,215.888,263.574z" style="fill: rgb(75, 75, 75);"/>
+            <path d="M474.48,232.712c-7.144-7.144-17.01-11.566-27.912-11.566h-12.35v78.914h12.35   c21.803,0,39.466-17.663,39.466-39.451C486.035,249.707,481.609,239.841,474.48,232.712z" style="fill: rgb(75, 75, 75);"/>
+            <path d="M37.519,232.712c-7.132,7.129-11.554,16.995-11.554,27.897c0,21.788,17.663,39.451,39.466,39.451h12.35   v-78.914h-12.35C54.526,221.146,44.66,225.568,37.519,232.712z" style="fill: rgb(75, 75, 75);"/>
+            <path d="M243.776,46.798c3.762,2.082,5.918,6.082,5.441,10.32l-7.351,61.586l-0.89,7.292h0.019l-0.019,0.157h30.076   l-8.238-69.035c-0.481-4.238,1.68-8.238,5.359-10.32c7.441-4.238,12.479-12.238,12.479-21.44c0-13.589-10.948-24.545-24.537-24.635   l0.074-0.562l-0.015-0.141l-0.078,0.703l0,0L256.014,0l-0.078,0.722c-13.601,0.078-24.561,11.038-24.561,24.635   C231.375,34.56,236.335,42.56,243.776,46.798z M251.053,11.601c4.961,0,8.96,4,8.96,8.878c0,4.961-3.999,8.961-8.96,8.961   c-4.957,0-8.957-4-8.957-8.961C242.096,15.601,246.096,11.601,251.053,11.601z" style="fill: rgb(75, 75, 75);"/>
+            <path d="M400.63,416.607H111.366c-16.963,0-30.623,13.734-30.623,30.623V512h350.51v-64.77   C431.253,430.341,417.594,416.607,400.63,416.607z" style="fill: rgb(75, 75, 75);"/>
+        </g>
+    </svg>`;
+    
+    // 音楽SVG
+    const musicSVG = `<svg width="32" height="32" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" style="display: inline; vertical-align: middle;">
+        <g fill="currentColor">
+            <path d="M256.001,305.598c27.332,0,49.598-22.266,49.598-49.598s-22.266-49.598-49.598-49.598S206.403,228.668,206.403,256S228.669,305.598,256.001,305.598z M256.001,228.446c15.21,0,27.554,12.347,27.554,27.554c0,15.207-12.344,27.554-27.554,27.554c-15.211,0-27.555-12.347-27.555-27.554C228.446,240.793,240.79,228.446,256.001,228.446z"/>
+            <path d="M432.34,256c0-97.375-78.969-176.343-176.339-176.343c-97.375,0-176.344,78.968-176.344,176.343s78.969,176.343,176.344,176.343C353.371,432.343,432.34,353.375,432.34,256z M352.423,133.5l-56.367,56.371c-7.722-5.453-16.504-9.094-25.817-10.699V99.43c29.379,2.223,56.93,13.383,79.645,32.027C350.719,132.153,351.598,132.782,352.423,133.5z M256.001,195.383c33.449,0,60.617,27.168,60.617,60.617s-27.168,60.617-60.617,60.617c-33.45,0-60.618-27.168-60.618-60.617S222.551,195.383,256.001,195.383z"/>
+        </g>
+    </svg>`;
+    
+    // ロボットのセリフテンプレート
+    const robotSpeech = song['理由'] ? `
+        <div style="background-color: #f0f4f8; border-left: 4px solid #667eea; padding: 12px; margin: 10px 0; border-radius: 4px;">
+            <div style="font-size: 12px; color: #4a5568; ">${robotSVG} AIが ${song['季節']}の曲として選んだ理由</div>
+            <div style="color: #2d3748; font-style: italic; font-size: smaller;">"${escapeHtml(song['理由'])}"</div>
+        </div>
+    ` : '';
+    
+    // プレビュー音声再生
+    const previewAudio = song['プレビューURL'] ? `
+        <div style="margin: 15px 0;">
+            <div style="font-size: 12px; color: #4a5568; margin-bottom: 6px;">${musicSVG} サンプル音楽</div>
+            <audio id="songPreviewAudio" controls controlsList="nodownload noplaybackrate" oncontextmenu="return false;" style="width: 100%; height: 32px;">
+                <source src="${escapeHtml(song['プレビューURL'])}" type="audio/mpeg">
+                ブラウザはオーディオ再生をサポートしていません
+            </audio>
+        </div>
+    ` : '';
+    
+    // タグ表示
+    const genres = [];
+    if (song['ジャンル1']) genres.push(song['ジャンル1']);
+    if (song['ジャンル2']) genres.push(song['ジャンル2']);
+    if (song['ジャンル3']) genres.push(song['ジャンル3']);
+    
+    const tagsHTML = `
+        <div style="margin: 10px 0;">
+            <div style="font-size: 12px; color: #4a5568; margin-bottom: 6px;">タグ</div>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                ${song['季節'] ? `<span class="tag-inline" style="background-color: #FFE0B2; color: #E65100;">${escapeHtml(song['季節'])}</span>` : ''}
+                ${genres.map(g => {
+                    const color = getTagColor(g, true);
+                    return `<span class="tag-inline" style="background-color: ${color.bg}; color: ${color.text};">${escapeHtml(g)}</span>`;
+                }).join('')}
+            </div>
+        </div>
+    `;
+    
+    // 日付をフォーマット
+    const finalPlayDate = formatDate(song['最終演奏']);
+    const releaseDate = formatDate(song['リリース日']);
+    
+    // ジャケット画像を背景に設定
+    const artworkBg = song['アートワークURL'] ? `background: linear-gradient(rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0.75)), url('${escapeHtml(song['アートワークURL'])}');` : '';
+    
+    content.innerHTML = `
+        <div style="position: relative; height: 150px; border-radius: 8px; overflow: clip; background: linear-gradient(56deg, rgba(102, 126, 234, 0.1) 0%, rgba(102, 126, 234, 0.05) 100%); ${artworkBg} background-size: cover; background-position: center; animation: bgScroll 20s ease-in-out infinite alternate;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 17px; padding: 10px; position: relative; text-shadow: 0px 0px 10px rgba(255, 255, 255, 0.8);">
+                <div>
+                    <div style="font-size: 11px; color: #718096; text-transform: uppercase; letter-spacing: 0.5px;">曲名</div>
+                    <div style="font-size: 16px; font-weight: bold; color: #2d3748; margin-top: 4px;">${escapeHtml(song['曲名'])}</div>
+                </div>
+                <div>
+                    <div style="font-size: 11px; color: #718096; text-transform: uppercase; letter-spacing: 0.5px;">曲名のよみがな</div>
+                    <div style="font-size: 14px; color: #4a5568; margin-top: 4px;">${escapeHtml(song['曲名の読み'] || '-')}</div>
+                </div>
+                <div>
+                    <div style="font-size: 11px; color: #718096; text-transform: uppercase; letter-spacing: 0.5px;">アーティスト</div>
+                    <div style="font-size: 15px; font-weight: 600; color: #2d3748; margin-top: 4px;">${escapeHtml(song['アーティスト'])}</div>
+                </div>
+                <div>
+                    <div style="font-size: 11px; color: #718096; text-transform: uppercase; letter-spacing: 0.5px;">アーティストのよみがな</div>
+                    <div style="font-size: 14px; color: #4a5568; margin-top: 4px;">${escapeHtml(song['アーティストの読み'] || '-')}</div>
+                </div>
+            </div>
+        </div>
+        
+        <div style="border-top: 1px solid #e2e8f0; padding-top: 15px; margin-top: 15px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                <div>
+                    <div style="font-size: 11px; color: #718096; text-transform: uppercase; letter-spacing: 0.5px;">最終演奏</div>
+                    <div style="font-size: 14px; color: #2d3748; margin-top: 4px; font-weight: 500;">${escapeHtml(finalPlayDate)}</div>
+                </div>
+                <div>
+                    <div style="font-size: 11px; color: #718096; text-transform: uppercase; letter-spacing: 0.5px;">演奏回数</div>
+                    <div style="font-size: 14px; color: #2d3748; margin-top: 4px; font-weight: 500;">${song['演奏回数']}回</div>
+                </div>
+                <div>
+                    <div style="font-size: 11px; color: #718096; text-transform: uppercase; letter-spacing: 0.5px;">リリース日</div>
+                    <div style="font-size: 14px; color: #2d3748; margin-top: 4px;">${escapeHtml(releaseDate) || '-'}</div>
+                </div>
+                <div>
+                    <div style="font-size: 11px; color: #718096; text-transform: uppercase; letter-spacing: 0.5px;">タイアップ</div>
+                    <div style="font-size: 14px; color: #2d3748; margin-top: 4px;">${escapeHtml(song['タイアップ'] || '-')}</div>
+                </div>
+            </div>
+        </div>
+        
+        ${tagsHTML}
+        ${robotSpeech}
+        ${previewAudio}
+    `;
+    
+    document.getElementById('songDetailPopup').classList.remove('hidden');
+}
+
+function closeSongDetail(event) {
+    if (event && event.target.id !== 'songDetailPopup') return;
+    
+    // 再生中の音声を停止
+    const audio = document.getElementById('songPreviewAudio');
+    if (audio) {
+        audio.pause();
+        audio.currentTime = 0;
+    }
+    
+    document.getElementById('songDetailPopup').classList.add('hidden');
 }

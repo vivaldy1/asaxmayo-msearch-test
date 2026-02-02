@@ -499,6 +499,7 @@
         cursor: pointer;
         font-size: 14px;
         transition: all 0.2s;
+        width: 68px;
     }
 
     .copy-button:hover {
@@ -1582,4 +1583,13 @@
 
     .setting-item label span {
         cursor: pointer;
+    }
+    
+    @keyframes bgScroll {
+        0% {
+            background-position: center 0%; /* è„í[ */
+        }
+        100% {
+            background-position: center 100%; /* â∫í[ */
+        }
     }
