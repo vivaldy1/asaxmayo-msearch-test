@@ -1811,7 +1811,7 @@ function openSongDetail(songIndex) {
     const previewAudio = song['プレビューURL'] ? `
         <div style="margin: 15px 0;">
             <div style="font-size: 12px; color: #4a5568; margin-bottom: 6px;">${musicSVG} サンプル音楽</div>
-            <audio id="songPreviewAudio" controls controlsList="nodownload noplaybackrate" oncontextmenu="return false;" oncanplay="this.volume = 0.1; this.oncanplay = null;" style="width: 100%; height: 32px;">
+            <audio id="songPreviewAudio" controls disableremoteplayback controlsList="nodownload noplaybackrate" oncontextmenu="return false;" oncanplay="this.volume = 0.1; this.oncanplay = null;" style="width: 100%; height: 32px;">
                 <source src="${escapeHtml(song['プレビューURL'])}" type="audio/mpeg">
                 ブラウザはオーディオ再生をサポートしていません
             </audio>
