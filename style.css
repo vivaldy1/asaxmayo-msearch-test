@@ -1463,7 +1463,7 @@
         display: inline-flex;
         align-items: center;
         cursor: pointer;
-        padding: 4px 24px;
+        padding: 4px 15px;
         border: 2px solid #e2e8f0;
         border-radius: 12px;
         transition: all 0.2s;
@@ -1587,9 +1587,136 @@
     
     @keyframes bgScroll {
         0% {
-            background-position: center 0%; /* ��[ */
+            background-position: center 100%; /* ��[ */
         }
         100% {
-            background-position: center 100%; /* ���[ */
+            background-position: center 0%; /* ���[ */
         }
+    }
+
+    /* 削除トグル用スタイル */
+    /* 削除トグル用スタイル（インライン） */
+    .form-report-delete-toggle-inline {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 8px;
+        background-color: #f0f4f8;
+        border-radius: 4px;
+        border: 1px solid #cbd5e0;
+        cursor: pointer;
+        font-size: 0.8rem;
+        color: #4a5568;
+        flex: 0 0 auto;
+        white-space: nowrap;
+    }
+
+    .form-report-delete-toggle-inline input[type="checkbox"] {
+        margin: 0;
+        cursor: pointer;
+        width: 14px;
+        height: 14px;
+    }
+
+    .form-report-delete-toggle-inline span {
+        cursor: pointer;
+    }
+
+    /* 「誤りを報告」フォーム用のインラインレイアウト */
+    .report-row-inline {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .report-row-inline .form-report-checkbox {
+        flex: 0 0 auto;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .report-row-inline .form-report-values {
+        flex: 1;
+    }
+
+    /* 詳細画面の報告ボタン */
+    .popup-detail-report-btn {
+        background-color: #f6ad55;
+        color: white;
+        border: none;
+        padding: 10px 16px;
+        border-radius: 6px;
+        font-size: 0.95rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .popup-detail-report-btn:hover {
+        background-color: #ed8936;
+    }
+
+    .popup-detail-report-btn:active {
+        transform: scale(0.98);
+    }
+
+    /* 詳細報告用のインラインレイアウト */
+    .detail-report-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .detail-report-row .form-report-checkbox {
+        flex: 0 0 auto;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .detail-report-row .form-report-values {
+        flex: 1;
+    }
+
+    .form-report-delete-toggle-inline {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 8px;
+        background-color: #f0f4f8;
+        border-radius: 4px;
+        border: 1px solid #cbd5e0;
+        cursor: pointer;
+        font-size: 0.8rem;
+        color: #4a5568;
+        flex: 0 0 auto;
+        white-space: nowrap;
+    }
+
+    .form-report-delete-toggle-inline input[type="checkbox"] {
+        margin: 0;
+        cursor: pointer;
+        width: 14px;
+        height: 14px;
+    }
+
+    .form-report-delete-toggle-inline span {
+        cursor: pointer;
+    }
+
+    .detail-report-current-tag {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 3px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        margin-left: 6px;
+    }
+
+    #detailReportArtworkPreview img {
+        display: block;
+    }
+
+    #detailReportPreviewAudio audio {
+        display: block;
     }

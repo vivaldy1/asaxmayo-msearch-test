@@ -272,10 +272,16 @@
                                     placeholder="修正後のよみがな" disabled oninput="updateReportButtonDisabledState()">
                             </div>
                         </div>
-                        <div class="form-report-row">
-                            <label class="form-report-checkbox">
-                                <input type="checkbox" name="reportTieup" onchange="toggleReportField(this)">
-                                <span>タイアップ</span>
+                        <div class="form-report-row report-row-inline" style="flex-flow: wrap; gap: 0px;">
+                            <label class="form-report-checkbox" style="margin-bottom: 0px; display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                                <div style="align-items: center;display: flex;">
+                                    <input type="checkbox" name="reportTieup" onchange="toggleReportField(this)">
+                                    <span>タイアップ</span>
+                                </div>
+                                <label class="form-report-delete-toggle-inline" style="margin-bottom: 0px;">
+                                    <input type="checkbox" name="reportTieupDelete" onchange="toggleTieupDelete()">
+                                    <span>削除</span>
+                                </label>
                             </label>
                             <div class="form-report-values">
                                 <input type="text" id="reportNewTieup" class="form-input-report" placeholder="修正後のタイアップ"
@@ -325,14 +331,114 @@
         </div>
     </div>
     <div id="songDetailPopup" class="popup-overlay hidden" onclick="closeSongDetail(event)">
-        <div class="popup-modal" onclick="event.stopPropagation()" style="max-width: 600px; max-height: 90vh; overflow-y: auto;">
+        <div class="popup-modal" onclick="event.stopPropagation()" style="max-width: 600px; max-height: 90vh; overflow-y: auto; position: relative;">
             <div class="popup-header">
                 <h2>詳細情報</h2>
             </div>
             <div class="popup-content" id="songDetailContent">
             </div>
-            <div class="popup-footer">
+            <div class="popup-footer" style="justify-content: space-between;">
+                <button class="popup-detail-report-btn" onclick="showDetailReportPopup()" style="margin-right: auto;">報告</button>
                 <button class="popup-cancel-btn" onclick="closeSongDetail()">閉じる</button>
+            </div>
+        </div>
+    </div>
+    <div id="detailReportPopup" class="popup-overlay hidden" onclick="closeDetailReportPopup(event)">
+        <div class="popup-modal" onclick="event.stopPropagation()">
+            <div class="popup-header">
+                <h2>詳細情報の報告</h2>
+            </div>
+            <div class="popup-content">
+                <form id="detailReportForm">
+                    <fieldset class="form-fieldset">
+                        <div class="form-report-row detail-report-row" style="flex-flow: wrap; gap: 0px;">
+                            <label class="form-report-checkbox" style="margin-bottom: 0px; display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                                <div style="align-items: center;display: flex;">
+                                    <input type="checkbox" name="detailReportGenre1" onchange="toggleDetailReportField(this, 'detailReportNewGenre1')">
+                                    <span>ジャンル1 <span class="detail-report-current-tag" id="detailReportGenre1Tag"></span></span>
+                                </div>
+                                <label class="form-report-delete-toggle-inline" style="margin-bottom: 0px;">
+                                    <input type="checkbox" name="detailReportGenre1Delete" onchange="toggleDetailGenreDelete(1)">
+                                    <span>削除</span>
+                                </label>
+                            </label>
+                            <div class="form-report-values">
+                                <input type="text" id="detailReportNewGenre1" class="form-input-report"
+                                    placeholder="修正後のジャンル1" disabled oninput="updateDetailReportButtonDisabledState()">
+                            </div>
+                        </div>
+                        <div class="form-report-row detail-report-row" style="flex-flow: wrap; gap: 0px;">
+                            <label class="form-report-checkbox" style="margin-bottom: 0px; display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                                <div style="align-items: center;display: flex;">
+                                    <input type="checkbox" name="detailReportGenre2" onchange="toggleDetailReportField(this, 'detailReportNewGenre2')">
+                                    <span>ジャンル2 <span class="detail-report-current-tag" id="detailReportGenre2Tag"></span></span>
+                                </div>
+                                <label class="form-report-delete-toggle-inline" style="margin-bottom: 0px;">
+                                    <input type="checkbox" name="detailReportGenre2Delete" onchange="toggleDetailGenreDelete(2)">
+                                    <span>削除</span>
+                                </label>
+                            </label>
+                            <div class="form-report-values">
+                                <input type="text" id="detailReportNewGenre2" class="form-input-report"
+                                    placeholder="修正後のジャンル2" disabled oninput="updateDetailReportButtonDisabledState()">
+                            </div>
+                        </div>
+                        <div class="form-report-row detail-report-row" style="flex-flow: wrap; gap: 0px;">
+                            <label class="form-report-checkbox" style="margin-bottom: 0px; display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                                <div style="align-items: center;display: flex;">
+                                    <input type="checkbox" name="detailReportGenre3" onchange="toggleDetailReportField(this, 'detailReportNewGenre3')">
+                                    <span>ジャンル3 <span class="detail-report-current-tag" id="detailReportGenre3Tag"></span></span>
+                                </div>
+                                <label class="form-report-delete-toggle-inline" style="margin-bottom: 0px;">
+                                    <input type="checkbox" name="detailReportGenre3Delete" onchange="toggleDetailGenreDelete(3)">
+                                    <span>削除</span>
+                                </label>
+                            </label>
+                            <div class="form-report-values">
+                                <input type="text" id="detailReportNewGenre3" class="form-input-report"
+                                    placeholder="修正後のジャンル3" disabled oninput="updateDetailReportButtonDisabledState()">
+                            </div>
+                        </div>
+                        <div class="form-report-row detail-report-row" style="flex-flow: wrap; gap: 0px;">
+                            <label class="form-report-checkbox" style="margin-bottom: 0px; display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                                <div style="align-items: center;display: flex;">
+                                    <input type="checkbox" name="detailReportSeason" onchange="toggleDetailReportField(this, 'detailReportNewSeason')">
+                                    <span>季節 <span class="detail-report-current-tag" id="detailReportSeasonTag"></span></span>
+                                </div>
+                                <label class="form-report-delete-toggle-inline" style="margin-bottom: 0px;">
+                                    <input type="checkbox" name="detailReportSeasonDelete" onchange="toggleDetailSeasonDelete()">
+                                    <span>削除</span>
+                                </label>
+                            </label>
+                            <div class="form-report-values">
+                                <input type="text" id="detailReportNewSeason" class="form-input-report"
+                                    placeholder="修正後の季節" disabled oninput="updateDetailReportButtonDisabledState()">
+                            </div>
+                        </div>
+                        <div class="form-report-row">
+                            <label class="form-report-checkbox">
+                                <input type="checkbox" name="detailReportArtwork" onchange="updateDetailReportButtonDisabledState()">
+                                <span>ジャケット写真がおかしい</span>
+                            </label>
+                            <div id="detailReportArtworkPreview"></div>
+                        </div>
+                        <div class="form-report-row">
+                            <label class="form-report-checkbox">
+                                <input type="checkbox" name="detailReportPreview" onchange="updateDetailReportButtonDisabledState()">
+                                <span>サンプル音楽がおかしい</span>
+                            </label>
+                            <div id="detailReportPreviewAudio"></div>
+                        </div>
+                        <div class="form-row">
+                            <label class="form-label" for="detailReporterName">依頼者名（任意）</label>
+                            <input type="text" id="detailReporterName" class="form-input" placeholder="あなたのお名前">
+                        </div>
+                    </fieldset>
+                </form>
+            </div>
+            <div class="popup-footer">
+                <button class="popup-cancel-btn" onclick="closeDetailReportPopup()">キャンセル</button>
+                <button class="popup-submit-btn" onclick="submitDetailReport()">報告する</button>
             </div>
         </div>
     </div>

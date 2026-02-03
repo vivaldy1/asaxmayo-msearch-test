@@ -365,22 +365,48 @@ function updateReportButtonState() {
 }
 function openReportPopup(song) {
     reportingSong = song;
-    document.getElementById('reportNewSongName').dataset.original = song['曲名'] || '';
-    document.getElementById('reportNewArtist').dataset.original = song['アーティスト'] || '';
-    document.getElementById('reportNewSongYomi').dataset.original = song['曲名の読み'] || '';
-    document.getElementById('reportNewArtistYomi').dataset.original = song['アーティストの読み'] || '';
-    document.getElementById('reportNewTieup').dataset.original = song['タイアップ'] || '';
-    document.getElementById('reportNewSongName').placeholder = song['曲名'] || '修正後の曲名';
-    document.getElementById('reportNewArtist').placeholder = song['アーティスト'] || '修正後のアーティスト';
-    document.getElementById('reportNewSongYomi').placeholder = song['曲名の読み'] || '修正後のよみがな';
-    document.getElementById('reportNewArtistYomi').placeholder = song['アーティストの読み'] || '修正後のよみがな';
-    document.getElementById('reportNewTieup').placeholder = song['タイアップ'] || '修正後のタイアップ';
-    document.getElementById('reportNewSongName').value = '';
-    document.getElementById('reportNewArtist').value = '';
-    document.getElementById('reportNewSongYomi').value = '';
-    document.getElementById('reportNewArtistYomi').value = '';
-    document.getElementById('reportNewTieup').value = '';
-    document.getElementById('reporterName').value = '';
+    
+    // 報告フォームの要素が存在するか確認
+    const reportForm = document.getElementById('reportPopup');
+    if (!reportForm) {
+        console.error('Report form not found');
+        return;
+    }
+    
+    const setIfExists = (elementId, value) => {
+        const el = document.getElementById(elementId);
+        if (el) el.dataset.original = value || '';
+    };
+    
+    const setPlaceholderIfExists = (elementId, value) => {
+        const el = document.getElementById(elementId);
+        if (el) el.placeholder = value || '修正後';
+    };
+    
+    const setValueIfExists = (elementId, value) => {
+        const el = document.getElementById(elementId);
+        if (el) el.value = value || '';
+    };
+    
+    setIfExists('reportNewSongName', song['曲名']);
+    setIfExists('reportNewArtist', song['アーティスト']);
+    setIfExists('reportNewSongYomi', song['曲名の読み']);
+    setIfExists('reportNewArtistYomi', song['アーティストの読み']);
+    setIfExists('reportNewTieup', song['タイアップ']);
+    
+    setPlaceholderIfExists('reportNewSongName', song['曲名']);
+    setPlaceholderIfExists('reportNewArtist', song['アーティスト']);
+    setPlaceholderIfExists('reportNewSongYomi', song['曲名の読み']);
+    setPlaceholderIfExists('reportNewArtistYomi', song['アーティストの読み']);
+    setPlaceholderIfExists('reportNewTieup', song['タイアップ']);
+    
+    setValueIfExists('reportNewSongName', '');
+    setValueIfExists('reportNewArtist', '');
+    setValueIfExists('reportNewSongYomi', '');
+    setValueIfExists('reportNewArtistYomi', '');
+    setValueIfExists('reportNewTieup', '');
+    setValueIfExists('reporterName', '');
+    
     document.querySelectorAll('input[name^="report"]').forEach(cb => {
         if (cb.type === 'checkbox') cb.checked = false;
     });
@@ -421,6 +447,308 @@ function toggleReportField(checkbox) {
     }
     updateReportButtonDisabledState();
 }
+function toggleTieupDelete() {
+    const deleteCheckbox = document.querySelector('input[name="reportTieupDelete"]');
+    const tieupCheckbox = document.querySelector('input[name="reportTieup"]');
+    const tieupInput = document.getElementById('reportNewTieup');
+    
+    if (deleteCheckbox.checked) {
+        // 削除がONの場合
+        tieupInput.value = '';
+        tieupInput.readOnly = true;
+        tieupCheckbox.checked = true;
+        tieupCheckbox.disabled = true;
+    } else {
+        // 削除がOFFの場合
+        tieupInput.readOnly = false;
+        tieupCheckbox.disabled = false;
+        tieupCheckbox.checked = false;  // チェックを自動的にOFFにする
+        tieupInput.value = '';
+        tieupInput.disabled = true;
+    }
+    updateReportButtonDisabledState();
+}
+function closeDetailReportPopup(event) {
+    if (event && event.target.id !== 'detailReportPopup') return;
+    const popup = document.getElementById('detailReportPopup');
+    popup.classList.add('hidden');
+    // フォームをリセット
+    document.getElementById('detailReportForm').reset();
+}
+
+function showDetailReportPopup() {
+    const popup = document.getElementById('detailReportPopup');
+    popup.classList.remove('hidden');
+    
+    // 詳細画面から曲情報を取得
+    const content = document.getElementById('songDetailContent');
+    const songTitle = content.querySelector('[style*="font-size: 16px; font-weight: bold"]')?.textContent || '';
+    
+    // allSongsから該当する曲を探す
+    const song = allSongs.find(s => s['曲名'] === songTitle);
+    if (!song) {
+        document.getElementById('detailReportForm').reset();
+        return;
+    }
+    
+    // 初期値を設定
+    document.getElementById('detailReportNewGenre1').value = song['ジャンル1'] || '';
+    document.getElementById('detailReportNewGenre2').value = song['ジャンル2'] || '';
+    document.getElementById('detailReportNewGenre3').value = song['ジャンル3'] || '';
+    document.getElementById('detailReportNewSeason').value = song['季節'] || '';
+    document.getElementById('detailReporterName').value = '';
+    
+    // タグを表示
+    const genre1Tag = document.getElementById('detailReportGenre1Tag');
+    const genre2Tag = document.getElementById('detailReportGenre2Tag');
+    const genre3Tag = document.getElementById('detailReportGenre3Tag');
+    const seasonTag = document.getElementById('detailReportSeasonTag');
+    
+    genre1Tag.textContent = song['ジャンル1'] ? `${song['ジャンル1']}` : '';
+    genre2Tag.textContent = song['ジャンル2'] ? `${song['ジャンル2']}` : '';
+    genre3Tag.textContent = song['ジャンル3'] ? `${song['ジャンル3']}` : '';
+    seasonTag.textContent = song['季節'] ? `${song['季節']}` : '';
+    
+    // タグにカラーを適用
+    if (song['ジャンル1']) {
+        const color = getTagColor(song['ジャンル1'], true);
+        genre1Tag.style.backgroundColor = color.bg;
+        genre1Tag.style.color = color.text;
+    }
+    if (song['ジャンル2']) {
+        const color = getTagColor(song['ジャンル2'], true);
+        genre2Tag.style.backgroundColor = color.bg;
+        genre2Tag.style.color = color.text;
+    }
+    if (song['ジャンル3']) {
+        const color = getTagColor(song['ジャンル3'], true);
+        genre3Tag.style.backgroundColor = color.bg;
+        genre3Tag.style.color = color.text;
+    }
+    if (song['季節']) {
+        seasonTag.style.backgroundColor = '#FFE0B2';
+        seasonTag.style.color = '#E65100';
+    }
+    
+    // アートワークプレビューを表示
+    const artworkPreview = document.getElementById('detailReportArtworkPreview');
+    if (song['アートワークURL']) {
+        artworkPreview.innerHTML = `<img src="${escapeHtml(song['アートワークURL'])}" style="max-width: 200px; height: auto; margin-top: 8px; border-radius: 4px; border: 1px solid #e2e8f0;">`;
+    } else {
+        artworkPreview.innerHTML = '';
+    }
+    
+    // オーディオプレビューを表示
+    const audioPreview = document.getElementById('detailReportPreviewAudio');
+    if (song['プレビューURL']) {
+        audioPreview.innerHTML = `<audio controls controlsList="nodownload noplaybackrate" oncanplay="this.volume = 0.1; this.oncanplay = null;" style="width: 100%; height: 32px; margin-top: 8px;">
+            <source src="${escapeHtml(song['プレビューURL'])}" type="audio/mpeg">
+            ブラウザはオーディオ再生をサポートしていません
+        </audio>`;
+    } else {
+        audioPreview.innerHTML = '';
+    }
+    
+    // フォームをリセット
+    document.querySelectorAll('#detailReportForm input[type="checkbox"]').forEach(cb => {
+        cb.checked = false;
+    });
+    document.querySelectorAll('#detailReportForm input[type="text"][id^="detailReportNew"]').forEach(input => {
+        input.disabled = true;
+    });
+    
+    updateDetailReportButtonDisabledState();
+}
+
+function toggleDetailReportField(checkbox, inputId) {
+    const input = document.getElementById(inputId);
+    if (checkbox.checked) {
+        input.disabled = false;
+        input.focus();
+    } else {
+        input.disabled = true;
+        input.value = '';
+    }
+    updateDetailReportButtonDisabledState();
+}
+
+function toggleDetailGenreDelete(genreNum) {
+    const deleteCheckbox = document.querySelector(`input[name="detailReportGenre${genreNum}Delete"]`);
+    const genreCheckbox = document.querySelector(`input[name="detailReportGenre${genreNum}"]`);
+    const genreInput = document.getElementById(`detailReportNewGenre${genreNum}`);
+    
+    if (deleteCheckbox.checked) {
+        // 削除がONの場合
+        genreInput.value = document.querySelector(`#detailReportGenre${genreNum}Tag`)?.textContent || '';
+        genreInput.readOnly = true;
+        genreCheckbox.checked = true;
+        genreCheckbox.disabled = true;
+    } else {
+        // 削除がOFFの場合
+        genreInput.readOnly = false;
+        genreCheckbox.disabled = false;
+        genreCheckbox.checked = false;  // チェックを自動的にOFFにする
+        genreInput.value = document.querySelector(`#detailReportGenre${genreNum}Tag`)?.textContent || '';
+        genreInput.disabled = true;
+    }
+    updateDetailReportButtonDisabledState();
+}
+
+function toggleDetailSeasonDelete() {
+    const deleteCheckbox = document.querySelector('input[name="detailReportSeasonDelete"]');
+    const seasonCheckbox = document.querySelector('input[name="detailReportSeason"]');
+    const seasonInput = document.getElementById('detailReportNewSeason');
+    
+    if (deleteCheckbox.checked) {
+        // 削除がONの場合
+        seasonInput.value = document.getElementById('detailReportSeasonTag')?.textContent || '';
+        seasonInput.readOnly = true;
+        seasonCheckbox.checked = true;
+        seasonCheckbox.disabled = true;
+    } else {
+        // 削除がOFFの場合
+        seasonInput.readOnly = false;
+        seasonCheckbox.disabled = false;
+        seasonCheckbox.checked = false;  // チェックを自動的にOFFにする
+        seasonInput.value = document.getElementById('detailReportSeasonTag')?.textContent || '';
+        seasonInput.disabled = true;
+    }
+    updateDetailReportButtonDisabledState();
+}
+
+function updateDetailReportButtonDisabledState() {
+    const submitBtn = document.querySelector('#detailReportPopup .popup-submit-btn');
+    const isAnyChecked = document.querySelectorAll('#detailReportPopup input[type="checkbox"]:checked').length > 0;
+    submitBtn.disabled = !isAnyChecked;
+}
+
+function submitDetailReport() {
+    if (!allSongs || allSongs.length === 0) return;
+    
+    // 詳細画面から曲を特定
+    const content = document.getElementById('songDetailContent');
+    const songTitle = content.querySelector('[style*="font-size: 16px; font-weight: bold"]')?.textContent || '';
+    
+    // allSongsから該当する曲を探す
+    const song = allSongs.find(s => s['曲名'] === songTitle);
+    if (!song) return;
+    
+    const checkedItems = [];
+    const updates = {};
+    
+    // ジャンル1
+    const genre1Checkbox = document.querySelector('input[name="detailReportGenre1"]');
+    const genre1DeleteCheckbox = document.querySelector('input[name="detailReportGenre1Delete"]');
+    if (genre1Checkbox.checked) {
+        checkedItems.push('ジャンル1');
+        const input = document.getElementById('detailReportNewGenre1');
+        updates['修正後ジャンル1'] = input.value.trim();
+    }
+    if (genre1DeleteCheckbox.checked) {
+        checkedItems.push('ジャンル1');
+        updates['修正後ジャンル1'] = '';
+    }
+    
+    // ジャンル2
+    const genre2Checkbox = document.querySelector('input[name="detailReportGenre2"]');
+    const genre2DeleteCheckbox = document.querySelector('input[name="detailReportGenre2Delete"]');
+    if (genre2Checkbox.checked) {
+        checkedItems.push('ジャンル2');
+        const input = document.getElementById('detailReportNewGenre2');
+        updates['修正後ジャンル2'] = input.value.trim();
+    }
+    if (genre2DeleteCheckbox.checked) {
+        checkedItems.push('ジャンル2');
+        updates['修正後ジャンル2'] = '';
+    }
+    
+    // ジャンル3
+    const genre3Checkbox = document.querySelector('input[name="detailReportGenre3"]');
+    const genre3DeleteCheckbox = document.querySelector('input[name="detailReportGenre3Delete"]');
+    if (genre3Checkbox.checked) {
+        checkedItems.push('ジャンル3');
+        const input = document.getElementById('detailReportNewGenre3');
+        updates['修正後ジャンル3'] = input.value.trim();
+    }
+    if (genre3DeleteCheckbox.checked) {
+        checkedItems.push('ジャンル3');
+        updates['修正後ジャンル3'] = '';
+    }
+    
+    // 季節
+    const seasonCheckbox = document.querySelector('input[name="detailReportSeason"]');
+    const seasonDeleteCheckbox = document.querySelector('input[name="detailReportSeasonDelete"]');
+    if (seasonCheckbox.checked) {
+        checkedItems.push('季節');
+        const input = document.getElementById('detailReportNewSeason');
+        updates['修正後季節'] = input.value.trim();
+    }
+    if (seasonDeleteCheckbox.checked) {
+        checkedItems.push('季節');
+        updates['修正後季節'] = '';
+    }
+    
+    // ジャケット写真
+    const artworkCheckbox = document.querySelector('input[name="detailReportArtwork"]');
+    if (artworkCheckbox.checked) {
+        checkedItems.push('ジャケット写真がおかしい');
+    }
+    
+    // サンプル音楽
+    const previewCheckbox = document.querySelector('input[name="detailReportPreview"]');
+    if (previewCheckbox.checked) {
+        checkedItems.push('サンプル音楽がおかしい');
+    }
+    
+    const reasonText = checkedItems.join('、') + (checkedItems.length > 0 ? 'が誤っている' : '');
+    
+    const detailsNonDisplay = [];
+    if (artworkCheckbox.checked) detailsNonDisplay.push('ジャケット写真がおかしい');
+    if (previewCheckbox.checked) detailsNonDisplay.push('サンプル音楽がおかしい');
+    
+    const reportData = {
+        理由: reasonText,
+        修正前曲名: song['曲名'] || '',
+        修正前アーティスト: song['アーティスト'] || '',
+        修正前ジャンル1: song['ジャンル1'] || '',
+        修正前ジャンル2: song['ジャンル2'] || '',
+        修正前ジャンル3: song['ジャンル3'] || '',
+        修正前季節: song['季節'] || '',
+        修正後ジャンル1: updates['修正後ジャンル1'] !== undefined ? updates['修正後ジャンル1'] : '',
+        修正後ジャンル2: updates['修正後ジャンル2'] !== undefined ? updates['修正後ジャンル2'] : '',
+        修正後ジャンル3: updates['修正後ジャンル3'] !== undefined ? updates['修正後ジャンル3'] : '',
+        修正後季節: updates['修正後季節'] !== undefined ? updates['修正後季節'] : '',
+        詳細非表示: detailsNonDisplay.join('、'),
+        依頼者名: document.getElementById('detailReporterName').value || '匿名'
+    };
+    
+    const submitBtn = document.querySelector('#detailReportPopup .popup-submit-btn');
+    submitBtn.disabled = true;
+    submitBtn.textContent = '送信中...';
+    const baseUrl = 'https://script.google.com/macros/s/AKfycbz1xZ1M2AWkHuDFkOy9Hb3sY3r7M7quHtnT4lVZqHV1SNikVds7K-gFDCURHRpR7T-4/exec';
+    
+    // GETで送信（URLパラメータ）
+    const params = Object.keys(reportData)
+        .map(key => encodeURIComponent(key) + '=' + encodeURIComponent(reportData[key]))
+        .join('&');
+    const url = baseUrl + '?' + params;
+    
+    fetch(url, { method: 'GET' })
+        .then(response => response.text())
+        .then(data => {
+            closeDetailReportPopup();
+            closeSongDetail();
+            showReportSuccessPopup();
+            submitBtn.disabled = false;
+            submitBtn.textContent = '報告する';
+        })
+        .catch(error => {
+            console.error('Detail report error:', error);
+            alert('報告の送信に失敗しました。もう一度お試しください。');
+            submitBtn.disabled = false;
+            submitBtn.textContent = '報告する';
+        });
+}
 function closeReportPopup(event) {
     if (event && event.target.id !== 'reportPopup') return;
     const popup = document.getElementById('reportPopup');
@@ -437,6 +765,7 @@ function submitReport() {
     document.querySelectorAll('input[name^="report"][type="checkbox"]:checked').forEach(cb => {
         const fieldName = cb.name;
         const reportRow = cb.closest('.form-report-row');
+        if (!reportRow) return;
         const input = reportRow.querySelector('.form-input-report');
         const value = input.value.trim();
         if (fieldName === 'reportSongName') {
@@ -456,7 +785,15 @@ function submitReport() {
             updates['修正後タイアップ'] = value;
         }
     });
-    const reasonText = checkedItems.join('、') + 'が誤っている';
+    
+    // タイアップ削除トグルの処理
+    const tieupDeleteCheckbox = document.querySelector('input[name="reportTieupDelete"]:checked');
+    if (tieupDeleteCheckbox) {
+        checkedItems.push('タイアップ');
+        updates['修正後タイアップ'] = '';
+    }
+    
+    const reasonText = checkedItems.join('、') + (checkedItems.length > 0 ? 'が誤っている' : '');
     const reportData = {
         理由: reasonText,
         修正前曲名: reportingSong['曲名'] || '',
@@ -475,10 +812,13 @@ function submitReport() {
     submitBtn.disabled = true;
     submitBtn.textContent = '送信中...';
     const baseUrl = 'https://script.google.com/macros/s/AKfycbz1xZ1M2AWkHuDFkOy9Hb3sY3r7M7quHtnT4lVZqHV1SNikVds7K-gFDCURHRpR7T-4/exec';
+    
+    // GETで送信（URLパラメータ）
     const params = Object.keys(reportData)
         .map(key => encodeURIComponent(key) + '=' + encodeURIComponent(reportData[key]))
         .join('&');
     const url = baseUrl + '?' + params;
+    
     fetch(url, { method: 'GET' })
         .then(response => response.text())
         .then(data => {
@@ -638,6 +978,7 @@ function createResultItem(song, query) {
     const titleYomi = song['曲名の読み'] || '';
     const artistYomi = song['アーティストの読み'] || '';
     const tieup = song['タイアップ'] || '';
+    const artwork = song['アートワークURL'] || '';
     const hTitle = highlightText(title, query);
     const hArtist = highlightText(artist, query);
     const hTitleYomi = highlightText(titleYomi, query);
@@ -653,10 +994,8 @@ function createResultItem(song, query) {
         buttonHTML = `<button class="copy-button report-button" onclick="openReportPopupByIndex(${songIndex})">報告</button>`;
     } else {
         const songIndex = allSongs.indexOf(song);
-        buttonHTML = `
-            <button class="copy-button" onclick="openSongDetail(${songIndex})" style="background-color: #e6f0ff; border-color: #667eea; color: #667eea; right: 90px;">詳細</button>
-            <button class="copy-button" onclick="copyToClipboard('${escapeQuotes(copyText)}')">コピー</button>
-        `;
+        buttonHTML = (artwork ? `<button class="copy-button" onclick="openSongDetail(${songIndex})" style="bottom: 53px;">詳細</button>`:'')
+                              + `<button class="copy-button" onclick="copyToClipboard('${escapeQuotes(copyText)}')">コピー</button>`;
     }
     return `
         <div class="result-item">
@@ -830,10 +1169,56 @@ function createPageBtn(text, pageNum) {
 }
 function highlightText(text, query) {
     if (!query || !text) return escapeHtml(text);
-    const regex = new RegExp('(' + escapeRegex(query) + ')', 'gi');
-    return escapeHtml(text).replace(regex, '<span class="highlight">$1</span>');
+    
+    // 元のテキストで検索対象とマッチ位置を取得
+    const escapedQuery = escapeRegex(query);
+    const searchRegex = new RegExp(escapedQuery, 'gi');
+    const matches = [];
+    let match;
+    
+    while ((match = searchRegex.exec(text)) !== null) {
+        matches.push({ start: match.index, end: match.index + match[0].length });
+    }
+    
+    // マッチ位置を記録しながら、文字ごとにエスケープしてハイライトを適用
+    let result = '';
+    let inHighlight = false;
+    
+    for (let i = 0; i < text.length; i++) {
+        const char = text[i];
+        
+        // このインデックスがマッチ範囲内かを確認
+        const isInMatch = matches.some(m => i >= m.start && i < m.end);
+        
+        // ハイライト状態の変化
+        if (isInMatch && !inHighlight) {
+            result += '<span class="highlight">';
+            inHighlight = true;
+        } else if (!isInMatch && inHighlight) {
+            result += '</span>';
+            inHighlight = false;
+        }
+        
+        // 文字をエスケープ
+        if (char === '&') result += '&amp;';
+        else if (char === '<') result += '&lt;';
+        else if (char === '>') result += '&gt;';
+        else if (char === '"') result += '&quot;';
+        else if (char === "'") result += '&#039;';
+        else result += char;
+    }
+    
+    // 最後に開いているタグを閉じる
+    if (inHighlight) {
+        result += '</span>';
+    }
+    
+    return result;
 }
-function escapeRegex(string) { return string.replace(/[*|[\]\\]/g, '\\$&').replace(/./g, '\\s*$&').replace(/[.+?^${}()]/g, '\\$&'); }
+function escapeRegex(string) { 
+    // 正規表現のメタ文字をエスケープ
+    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
 function formatDate(dateStr) {
     const date = new Date(dateStr);
     return isNaN(date.getTime()) ? dateStr : `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}`;
@@ -1196,6 +1581,9 @@ function showTagFilterPopup() {
     }
     
     document.getElementById('tagFilterPopup').classList.remove('hidden');
+    const content = document.getElementById('tagFilterPopup').querySelector('.popup-content');
+    if (content) content.scrollTop = 0;
+    
 }
 
 function toggleSeasonFilter(btn, season) {
@@ -1423,7 +1811,7 @@ function openSongDetail(songIndex) {
     const previewAudio = song['プレビューURL'] ? `
         <div style="margin: 15px 0;">
             <div style="font-size: 12px; color: #4a5568; margin-bottom: 6px;">${musicSVG} サンプル音楽</div>
-            <audio id="songPreviewAudio" controls controlsList="nodownload noplaybackrate" oncontextmenu="return false;" style="width: 100%; height: 32px;">
+            <audio id="songPreviewAudio" controls controlsList="nodownload noplaybackrate" oncontextmenu="return false;" oncanplay="this.volume = 0.1; this.oncanplay = null;" style="width: 100%; height: 32px;">
                 <source src="${escapeHtml(song['プレビューURL'])}" type="audio/mpeg">
                 ブラウザはオーディオ再生をサポートしていません
             </audio>
@@ -1457,7 +1845,7 @@ function openSongDetail(songIndex) {
     const artworkBg = song['アートワークURL'] ? `background: linear-gradient(rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0.75)), url('${escapeHtml(song['アートワークURL'])}');` : '';
     
     content.innerHTML = `
-        <div style="position: relative; height: 150px; border-radius: 8px; overflow: clip; background: linear-gradient(56deg, rgba(102, 126, 234, 0.1) 0%, rgba(102, 126, 234, 0.05) 100%); ${artworkBg} background-size: cover; background-position: center; animation: bgScroll 20s ease-in-out infinite alternate;">
+        <div style="position: relative; height: 150px; border-radius: 8px; overflow: clip; background: linear-gradient(56deg, rgba(102, 126, 234, 0.1) 0%, rgba(102, 126, 234, 0.05) 100%); ${artworkBg} background-size: cover; background-position: bottom; animation: bgScroll 10s ease-in-out infinite alternate;">
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 17px; padding: 10px; position: relative; text-shadow: 0px 0px 10px rgba(255, 255, 255, 0.8);">
                 <div>
                     <div style="font-size: 11px; color: #718096; text-transform: uppercase; letter-spacing: 0.5px;">曲名</div>
