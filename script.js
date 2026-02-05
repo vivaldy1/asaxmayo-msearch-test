@@ -1123,6 +1123,8 @@ function switchTab(tabName) {
         if (btnContainer) {
             btnContainer.classList.add('hidden');
         }
+        updateListDetailButton();
+        renderListTable()
     }
     
     document.querySelectorAll('.tab-btn').forEach(btn => {
