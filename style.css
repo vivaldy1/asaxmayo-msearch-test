@@ -185,15 +185,7 @@
         transform: rotate(180deg);
     }
 
-    .report-icon {
-        width: 20px;
-        height: 20px;
-        fill: #4a5568;
-    }
-
-    .menu-item:hover .report-icon {
-        fill: #667eea;
-    }
+    .menu-item:hover 
 
     .info-icon {
         width: 20px;
@@ -216,9 +208,7 @@
         color: #718096;
     }
 
-    .menu-item.disabled:hover .report-icon {
-        fill: #4a5568;
-    }
+    .menu-item.disabled:hover 
 
     .menu-overlay {
         position: fixed;
@@ -508,11 +498,7 @@
         border-color: #667eea;
     }
 
-    .copy-button.report-button {
-        background: #fc8181;
-        color: white;
-        border-color: #fc8181;
-    }
+    .copy-button
 
     .copy-button.report-button:hover {
         background: #f56565;
@@ -727,9 +713,39 @@
         z-index: 900;
         right: calc((100vw - 900px) / 2 + 30px);
     }
+    .detail-btn {
+        position: fixed;
+        bottom: 30px;
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        font-size: 24px;
+        font-weight: bold;
+        cursor: pointer;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        transition: all 0.3s ease;
+        z-index: 900;
+        right: calc((100vw - 900px) / 2 + 85px);
+        transform: translateX(100px);
+        opacity: 0;
+        visibility: hidden;
+        transition: transform 0.5s ease-out, opacity 0.5s ease-out;
+    }
 
     .scroll-to-top-btn.show {
         display: flex;
+    }
+    .detail-btn.show {
+        display: flex;
+        transform: translateX(0);
+        opacity: 1;
+        visibility: visible;
+        
     }
 
     .scroll-to-top-btn:hover {
@@ -737,8 +753,16 @@
         transform: translateY(-3px);
         box-shadow: 0 6px 16px rgba(102, 126, 234, 0.5);
     }
+    .detail-btn:hover {
+        background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+        transform: translateY(-3px);
+        box-shadow: 0 6px 16px rgba(102, 126, 234, 0.5);
+    }
 
     .scroll-to-top-btn:active {
+        transform: translateY(-1px);
+    }
+    .detail-btn:active {
         transform: translateY(-1px);
     }
 
@@ -786,21 +810,6 @@
         color: #4a5568;
         font-size: 20px;
         margin: 0;
-    }
-
-    .popup-close-btn {
-        background: none;
-        border: none;
-        color: #718096;
-        font-size: 28px;
-        cursor: pointer;
-        padding: 0;
-        width: 32px;
-        height: 32px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: color 0.2s;
     }
 
     .popup-close-btn:hover {
@@ -923,20 +932,6 @@
         flex-direction: column;
     }
 
-    .form-display-box {
-        padding: 10px 12px;
-        background: white;
-        border: 1px solid #cbd5e0;
-        border-radius: 6px;
-        color: #2d3748;
-        font-size: 14px;
-        font-family: inherit;
-        word-break: break-word;
-        min-height: 40px;
-        display: flex;
-        align-items: center;
-    }
-
     .form-input-report {
         width: 100%;
         padding: 10px 12px;
@@ -992,31 +987,6 @@
         outline: none;
         border-color: #667eea;
         box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-    }
-
-    .form-display {
-        padding: 10px 12px;
-        background: white;
-        border: 1px solid #e2e8f0;
-        border-radius: 6px;
-        color: #2d3748;
-        font-size: 14px;
-        word-break: break-word;
-    }
-
-    .form-checkbox-group {
-        display: grid;
-        grid-template-columns: 1fr;
-        gap: 8px;
-    }
-
-    .form-checkbox {
-        display: flex;
-        align-items: center;
-        cursor: pointer;
-        padding: 8px;
-        border-radius: 4px;
-        transition: background 0.2s;
     }
 
     .form-checkbox:hover {
@@ -1200,6 +1170,13 @@
             right: calc((100vw - 100%) / 2 + 15px);
             font-size: 20px;
         }
+        .detail-btn {
+            width: 45px;
+            height: 45px;
+            bottom: 20px;
+            right: calc((100vw - 100%) / 2 + 65px);
+            font-size: 20px;
+        }
     }
 
     /* Settings UI */
@@ -1336,20 +1313,7 @@
     }
 
     /* Report Mode in List Table */
-    .report-btn-cell {
-        text-align: center;
-    }
-
-    .report-btn-small {
-        padding: 4px 8px;
-        font-size: 12px;
-        background-color: #fc8181;
-        color: white;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-    }
-
+    
     .report-btn-small:hover {
         background-color: #f56565;
     }
@@ -1441,9 +1405,7 @@
         border-right: 1px solid #fc8181;
     }
 
-    tr.report-row-selectable {
-        cursor: pointer;
-    }
+    tr
 
     /* Drag and Drop Styling */
     .column-item.dragging {
@@ -1593,10 +1555,7 @@
     }
 
     /* Tag display row in table */
-    tr.tags-row {
-        background: #f9fafb;
-        border-bottom: 1px solid #e2e8f0;
-    }
+    tr
 
     tr.tags-row td {
         padding: 4px 12px !important;
@@ -1622,15 +1581,15 @@
     
     @keyframes bgScroll {
         0% {
-            background-position: center 100%; /* 上端 */
+            background-position: center 100%; /* ä¸ç«¯ */
         }
         100% {
-            background-position: center 0%; /* 下端 */
+            background-position: center 0%; /* ä¸ç«¯ */
         }
     }
 
-    /* 蜑企勁繝医げ繝ｫ逕ｨ繧ｹ繧ｿ繧､繝ｫ */
-    /* 蜑企勁繝医げ繝ｫ逕ｨ繧ｹ繧ｿ繧､繝ｫ�医う繝ｳ繝ｩ繧､繝ｳ） */
+    /* èä¼åç¹å»ãç¹ï½«éï½¨ç¹§ï½¹ç¹§ï½¿ç¹§ï½¤ç¹ï½« */
+    /* èä¼åç¹å»ãç¹ï½«éï½¨ç¹§ï½¹ç¹§ï½¿ç¹§ï½¤ç¹ï½«ï¼å»ãç¹ï½³ç¹ï½©ç¹§ï½¤ç¹ï½³ï¼ */
     .form-report-delete-toggle-inline {
         display: flex;
         align-items: center;
@@ -1657,7 +1616,7 @@
         cursor: pointer;
     }
 
-    /* 縲瑚ｪ､繧翫ｒ蝣ｱ蜻翫�阪ヵ繧ｩ繝ｼ繝�逕ｨ縺ｮ繧､繝ｳ繝ｩ繧､繝ｳ繝ｬ繧､繧｢繧ｦ繝� */
+    /* ç¸²çï½ªï½¤ç¹§ç¿«ï½è£ï½±è»ç¿«éªãµç¹§ï½©ç¹ï½¼ç¹ éï½¨ç¸ºï½®ç¹§ï½¤ç¹ï½³ç¹ï½©ç¹§ï½¤ç¹ï½³ç¹ï½¬ç¹§ï½¤ç¹§ï½¢ç¹§ï½¦ç¹ */
     .report-row-inline {
         display: flex;
         align-items: center;
@@ -1675,7 +1634,7 @@
         flex: 1;
     }
 
-    /* 隧ｳ邏ｰ逕ｻ髱｢縺ｮ蝣ｱ蜻翫��繧ｿ繝ｳ */
+    /* é§ï½³éï½°éï½»é«±ï½¢ç¸ºï½®è£ï½±è»ç¿«ç¹§ï½¿ç¹ï½³ */
     .popup-detail-report-btn {
         background-color: #f6ad55;
         color: white;
@@ -1695,7 +1654,7 @@
         transform: scale(0.98);
     }
 
-    /* 隧ｳ邏ｰ蝣ｱ蜻顔畑縺ｮ繧､繝ｳ繝ｩ繧､繝ｳ繝ｬ繧､繧｢繧ｦ繝� */
+    /* é§ï½³éï½°è£ï½±è»é¡çç¸ºï½®ç¹§ï½¤ç¹ï½³ç¹ï½©ç¹§ï½¤ç¹ï½³ç¹ï½¬ç¹§ï½¤ç¹§ï½¢ç¹§ï½¦ç¹ */
     .detail-report-row {
         display: flex;
         align-items: center;
@@ -1756,11 +1715,11 @@
         display: block;
     }
 
-    /* フローティング詳細ボタン（全曲一覧用） */
+    /* ãã­ã¼ãã£ã³ã°è©³ç´°ãã¿ã³ï¼å¨æ²ä¸è¦§ç¨ï¼ */
     #listDetailButtonContainer {
         position: fixed;
-        bottom: 30px;
-        right: 30px;
+        bottom: 20px;
+        right: 75px;
         z-index: 100;
         display: flex;
         gap: 10px;
@@ -1772,8 +1731,8 @@
     }
 
     .list-detail-btn {
-        width: 50px;
-        height: 50px;
+        width: 45px;
+        height: 45px;
         border-radius: 50%;
         background: #667eea;
         color: white;
@@ -1808,9 +1767,3 @@
         }
     }
 
-    @media (max-width: 600px) {
-        #listDetailButtonContainer {
-            bottom: 20px;
-            right: 20px;
-        }
-    }

@@ -1718,32 +1718,16 @@ function selectListRowForDetail(index, event) {
 
 // 全曲一覧の詳細ボタンを更新/表示する
 function updateListDetailButton() {
-    let btnContainer = document.getElementById('listDetailButtonContainer');
-    
+    let btnContainer = document.getElementById('detailBtn');
     if (!selectedListSong) {
-        // ボタンを非表示にする
-        if (btnContainer) {
-            btnContainer.classList.add('hidden');
-        }
-        return;
+        btnContainer.classList.remove('show');
+    } else {
+        const songIndex = allSongs.indexOf(selectedListSong);
+        
+        detailBtn.onclick = function() {
+            openSongDetail(songIndex);
+        };
+        
+        btnContainer.classList.add('show');
     }
-    
-    // ボタンコンテナがない場合は作成
-    if (!btnContainer) {
-        btnContainer = document.createElement('div');
-        btnContainer.id = 'listDetailButtonContainer';
-        btnContainer.className = 'list-detail-floating-button';
-        document.body.appendChild(btnContainer);
-    }
-    
-    // ボタンを表示
-    btnContainer.classList.remove('hidden');
-    
-    // 詳細ボタンのクリックハンドラを作成
-    const songIndex = allSongs.indexOf(selectedListSong);
-    btnContainer.innerHTML = `
-        <button class="list-detail-btn" onclick="openSongDetail(${songIndex})" title="詳細情報を表示">
-            <span style="font-size: 24px;">ℹ</span>
-        </button>
-    `;
 }
