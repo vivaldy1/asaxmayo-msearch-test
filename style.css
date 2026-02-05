@@ -519,6 +519,28 @@
         border-color: #f56565;
     }
 
+    .copy-button.detail-btn-with-artwork {
+        background: #667eea;
+        color: white;
+        border-color: #667eea;
+    }
+
+    .copy-button.detail-btn-with-artwork:hover {
+        background: #5a67d8;
+        border-color: #5a67d8;
+    }
+
+    .copy-button.detail-btn-no-artwork {
+        background: #cbd5e0;
+        color: #4a5568;
+        border-color: #cbd5e0;
+    }
+
+    .copy-button.detail-btn-no-artwork:hover {
+        background: #a0aec0;
+        border-color: #a0aec0;
+    }
+
     .highlight {
         background-color: #fffaf0;
         color: #ed8936;
@@ -581,6 +603,19 @@
 
     tr:hover td {
         background-color: #f8fbff;
+    }
+
+    tr.list-row-selectable {
+        cursor: pointer;
+    }
+
+    tr.list-detail-selected td {
+        background-color: #e6fffa;
+        border-color: #81e6d9;
+    }
+
+    tr.list-detail-selected:hover td {
+        background-color: #d0f4f0;
     }
 
     .pagination {
@@ -1587,15 +1622,15 @@
     
     @keyframes bgScroll {
         0% {
-            background-position: center 100%; /* ��[ */
+            background-position: center 100%; /* 上端 */
         }
         100% {
-            background-position: center 0%; /* ���[ */
+            background-position: center 0%; /* 下端 */
         }
     }
 
-    /* 削除トグル用スタイル */
-    /* 削除トグル用スタイル（インライン） */
+    /* 蜑企勁繝医げ繝ｫ逕ｨ繧ｹ繧ｿ繧､繝ｫ */
+    /* 蜑企勁繝医げ繝ｫ逕ｨ繧ｹ繧ｿ繧､繝ｫ�医う繝ｳ繝ｩ繧､繝ｳ） */
     .form-report-delete-toggle-inline {
         display: flex;
         align-items: center;
@@ -1622,7 +1657,7 @@
         cursor: pointer;
     }
 
-    /* 「誤りを報告」フォーム用のインラインレイアウト */
+    /* 縲瑚ｪ､繧翫ｒ蝣ｱ蜻翫�阪ヵ繧ｩ繝ｼ繝�逕ｨ縺ｮ繧､繝ｳ繝ｩ繧､繝ｳ繝ｬ繧､繧｢繧ｦ繝� */
     .report-row-inline {
         display: flex;
         align-items: center;
@@ -1640,7 +1675,7 @@
         flex: 1;
     }
 
-    /* 詳細画面の報告ボタン */
+    /* 隧ｳ邏ｰ逕ｻ髱｢縺ｮ蝣ｱ蜻翫��繧ｿ繝ｳ */
     .popup-detail-report-btn {
         background-color: #f6ad55;
         color: white;
@@ -1660,7 +1695,7 @@
         transform: scale(0.98);
     }
 
-    /* 詳細報告用のインラインレイアウト */
+    /* 隧ｳ邏ｰ蝣ｱ蜻顔畑縺ｮ繧､繝ｳ繝ｩ繧､繝ｳ繝ｬ繧､繧｢繧ｦ繝� */
     .detail-report-row {
         display: flex;
         align-items: center;
@@ -1719,4 +1754,63 @@
 
     #detailReportPreviewAudio audio {
         display: block;
+    }
+
+    /* フローティング詳細ボタン（全曲一覧用） */
+    #listDetailButtonContainer {
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        z-index: 100;
+        display: flex;
+        gap: 10px;
+        animation: slideUp 0.3s ease-out;
+    }
+
+    #listDetailButtonContainer.hidden {
+        display: none !important;
+    }
+
+    .list-detail-btn {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: #667eea;
+        color: white;
+        border: none;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+        font-weight: bold;
+    }
+
+    .list-detail-btn:hover {
+        background: #5a67d8;
+        box-shadow: 0 6px 16px rgba(102, 126, 234, 0.6);
+        transform: scale(1.05);
+    }
+
+    .list-detail-btn:active {
+        transform: scale(0.95);
+    }
+
+    @keyframes slideUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @media (max-width: 600px) {
+        #listDetailButtonContainer {
+            bottom: 20px;
+            right: 20px;
+        }
     }

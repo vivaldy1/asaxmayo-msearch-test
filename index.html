@@ -47,12 +47,6 @@
                         </svg>
                         <span>データについて</span>
                     </button>
-                    <button id="reportBtn" onclick="toggleReportMode()" class="menu-item report-item" title="誤りを報告">
-                        <svg class="report-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z" />
-                        </svg>
-                        <span>誤りを報告</span>
-                    </button>
                     <button onclick="forceRefresh()" class="menu-item refresh-item" title="サーバが作成したデータを再取得するだけ。そのサーバは配信後に1回くらいしか更新しないので、あまり意味がないボタン">
                         <svg class="refresh-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                             <path
@@ -223,84 +217,6 @@
             <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z" />
         </svg>
     </button>
-    <div id="reportPopup" class="popup-overlay hidden">
-        <div class="popup-modal" onclick="event.stopPropagation()">
-            <div class="popup-header">
-                <h2>誤りを報告</h2>
-            </div>
-            <div class="popup-content">
-                <form id="reportForm">
-                    <fieldset class="form-fieldset">
-                        <legend>修正内容を選択・入力してください</legend>
-                        <div class="form-report-row">
-                            <label class="form-report-checkbox">
-                                <input type="checkbox" name="reportSongName" onchange="toggleReportField(this)">
-                                <span>曲名</span>
-                            </label>
-                            <div class="form-report-values">
-                                <input type="text" id="reportNewSongName" class="form-input-report" placeholder="修正後の曲名"
-                                    disabled oninput="updateReportButtonDisabledState()">
-                            </div>
-                        </div>
-                        <div class="form-report-row">
-                            <label class="form-report-checkbox">
-                                <input type="checkbox" name="reportArtist" onchange="toggleReportField(this)">
-                                <span>アーティスト</span>
-                            </label>
-                            <div class="form-report-values">
-                                <input type="text" id="reportNewArtist" class="form-input-report"
-                                    placeholder="修正後のアーティスト" disabled oninput="updateReportButtonDisabledState()">
-                            </div>
-                        </div>
-                        <div class="form-report-row">
-                            <label class="form-report-checkbox">
-                                <input type="checkbox" name="reportSongYomi" onchange="toggleReportField(this)">
-                                <span>曲名のよみがな</span>
-                            </label>
-                            <div class="form-report-values">
-                                <input type="text" id="reportNewSongYomi" class="form-input-report"
-                                    placeholder="修正後のよみがな" disabled oninput="updateReportButtonDisabledState()">
-                            </div>
-                        </div>
-                        <div class="form-report-row">
-                            <label class="form-report-checkbox">
-                                <input type="checkbox" name="reportArtistYomi" onchange="toggleReportField(this)">
-                                <span>アーティストのよみがな</span>
-                            </label>
-                            <div class="form-report-values">
-                                <input type="text" id="reportNewArtistYomi" class="form-input-report"
-                                    placeholder="修正後のよみがな" disabled oninput="updateReportButtonDisabledState()">
-                            </div>
-                        </div>
-                        <div class="form-report-row report-row-inline" style="flex-flow: wrap; gap: 0px;">
-                            <label class="form-report-checkbox" style="margin-bottom: 0px; display: flex; align-items: center; justify-content: space-between; width: 100%;">
-                                <div style="align-items: center;display: flex;">
-                                    <input type="checkbox" name="reportTieup" onchange="toggleReportField(this)">
-                                    <span>タイアップ</span>
-                                </div>
-                                <label class="form-report-delete-toggle-inline" style="margin-bottom: 0px;">
-                                    <input type="checkbox" name="reportTieupDelete" onchange="toggleTieupDelete()">
-                                    <span>削除</span>
-                                </label>
-                            </label>
-                            <div class="form-report-values">
-                                <input type="text" id="reportNewTieup" class="form-input-report" placeholder="修正後のタイアップ"
-                                    disabled oninput="updateReportButtonDisabledState()">
-                            </div>
-                        </div>
-                    </fieldset>
-                    <div class="form-row">
-                        <label class="form-label" for="reporterName">依頼者名（任意）</label>
-                        <input type="text" id="reporterName" class="form-input" placeholder="あなたのお名前">
-                    </div>
-                </form>
-            </div>
-            <div class="popup-footer">
-                <button class="popup-cancel-btn" onclick="closeReportPopup()">キャンセル</button>
-                <button class="popup-submit-btn" onclick="submitReport()">報告する</button>
-            </div>
-        </div>
-    </div>
     <div class="copy-toast" id="copyToast">コピーしました!</div>
     <div id="tagFilterPopup" class="popup-overlay hidden" onclick="closeTagFilterPopup(event)">
         <div class="popup-modal" onclick="event.stopPropagation()">
@@ -346,11 +262,68 @@
     <div id="detailReportPopup" class="popup-overlay hidden" onclick="closeDetailReportPopup(event)">
         <div class="popup-modal" onclick="event.stopPropagation()">
             <div class="popup-header">
-                <h2>詳細情報の報告</h2>
+                <h2>詳細情報の誤り報告</h2>
             </div>
             <div class="popup-content">
                 <form id="detailReportForm">
                     <fieldset class="form-fieldset">
+                        <legend style="margin-bottom: 15px;">基本情報</legend>
+                        <div class="form-report-row">
+                            <label class="form-report-checkbox">
+                                <input type="checkbox" name="detailReportSongName" onchange="toggleDetailReportField(this, 'detailReportNewSongName')">
+                                <span>曲名</span>
+                            </label>
+                            <div class="form-report-values">
+                                <input type="text" id="detailReportNewSongName" class="form-input-report" placeholder="修正後の曲名"
+                                    disabled oninput="updateDetailReportButtonDisabledState()">
+                            </div>
+                        </div>
+                        <div class="form-report-row">
+                            <label class="form-report-checkbox">
+                                <input type="checkbox" name="detailReportArtist" onchange="toggleDetailReportField(this, 'detailReportNewArtist')">
+                                <span>アーティスト</span>
+                            </label>
+                            <div class="form-report-values">
+                                <input type="text" id="detailReportNewArtist" class="form-input-report"
+                                    placeholder="修正後のアーティスト" disabled oninput="updateDetailReportButtonDisabledState()">
+                            </div>
+                        </div>
+                        <div class="form-report-row">
+                            <label class="form-report-checkbox">
+                                <input type="checkbox" name="detailReportSongYomi" onchange="toggleDetailReportField(this, 'detailReportNewSongYomi')">
+                                <span>曲名のよみがな</span>
+                            </label>
+                            <div class="form-report-values">
+                                <input type="text" id="detailReportNewSongYomi" class="form-input-report"
+                                    placeholder="修正後のよみがな" disabled oninput="updateDetailReportButtonDisabledState()">
+                            </div>
+                        </div>
+                        <div class="form-report-row">
+                            <label class="form-report-checkbox">
+                                <input type="checkbox" name="detailReportArtistYomi" onchange="toggleDetailReportField(this, 'detailReportNewArtistYomi')">
+                                <span>アーティストのよみがな</span>
+                            </label>
+                            <div class="form-report-values">
+                                <input type="text" id="detailReportNewArtistYomi" class="form-input-report"
+                                    placeholder="修正後のよみがな" disabled oninput="updateDetailReportButtonDisabledState()">
+                            </div>
+                        </div>
+                        <div class="form-report-row report-row-inline" style="flex-flow: wrap; gap: 0px;">
+                            <label class="form-report-checkbox" style="margin-bottom: 0px; display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                                <div style="align-items: center;display: flex;">
+                                    <input type="checkbox" name="detailReportTieup" onchange="toggleDetailReportField(this, 'detailReportNewTieup')">
+                                    <span>タイアップ</span>
+                                </div>
+                                <label class="form-report-delete-toggle-inline" style="margin-bottom: 0px;">
+                                    <input type="checkbox" name="detailReportTieupDelete" onchange="toggleDetailTieupDelete()">
+                                    <span>削除</span>
+                                </label>
+                            </label>
+                            <div class="form-report-values">
+                                <input type="text" id="detailReportNewTieup" class="form-input-report" placeholder="修正後のタイアップ"
+                                    disabled oninput="updateDetailReportButtonDisabledState()">
+                            </div>
+                        </div>
                         <div class="form-report-row detail-report-row" style="flex-flow: wrap; gap: 0px;">
                             <label class="form-report-checkbox" style="margin-bottom: 0px; display: flex; align-items: center; justify-content: space-between; width: 100%;">
                                 <div style="align-items: center;display: flex;">

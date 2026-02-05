@@ -5,8 +5,7 @@ var listFilterTimeout = null;
 var currentSort = { key: '最終演奏', ascending: false };
 var currentPage = 1;
 var itemsPerPage = 50;
-var reportMode = false;
-var reportingSong = null;
+var selectedListSong = null; // 全曲一覧で選択された曲
 var dataCreatedAt = null; // データ作成時刻を保持
 var appSettings = {}; // 設定オブジェクト（loadSettings()で初期化される）
 
@@ -228,7 +227,7 @@ function renderListHeader() {
     const thead = document.querySelector('#songsTable thead tr');
     let html = '';
     appSettings.listColumns.forEach(col => {
-        if (col.visible || reportMode) {
+        if (col.visible) {
             html += `<th onclick="sortTable('${col.key}')">${escapeHtml(col.label)} ↕</th>`;
         }
     });
@@ -306,147 +305,6 @@ function closeAboutPopup(event) {
     const popup = document.getElementById('aboutPopup');
     popup.classList.add('hidden');
 }
-function toggleReportMode() {
-    closeMenu();
-    reportMode = !reportMode;
-    const reportBtn = document.getElementById('reportBtn');
-    if (reportMode) {
-        reportBtn.innerHTML = `
-                <svg class="report-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z" />
-                </svg>
-                <span>報告モードを終了</span>
-            `;
-        showModePopup();
-    } else {
-        reportBtn.innerHTML = `
-                <svg class="report-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z" />
-                </svg>
-                <span>誤りを報告</span>
-            `;
-    }
-    updateReportButtonState();
-    if (!reportMode) {
-        reportingSong = null;
-        updateFloatingReportButton();
-    }
-    performSearch();
-    renderListHeader();
-    renderListTable();
-}
-function showModePopup() {
-    const popup = document.createElement('div');
-    popup.className = 'popup-overlay';
-    popup.style.animation = 'popupFadeIn 0.3s ease';
-    popup.innerHTML = `
-            <div class="popup-modal" onclick="event.stopPropagation()">
-                <div class="popup-header">
-                    <h2>報告モードを開始しました</h2>
-                </div>
-                <div class="popup-content">
-                    <p style="line-height: 1.8; color: #4a5568;">
-                        報告モードになりました。<br><br>
-                        【検索】の場合は、検索後に報告ボタンから、<br>
-                        【全曲一覧】の場合は、行を選択してから右下の⚠ボタンで報告できます。
-                    </p>
-                </div>
-                <div class="popup-footer">
-                    <button class="popup-cancel-btn" onclick="toggleReportMode(); this.closest('.popup-overlay').remove();">キャンセル</button>
-                    <button class="popup-ok-btn" onclick="this.closest('.popup-overlay').remove()">OK</button>
-                </div>
-            </div>
-        `;
-    document.body.appendChild(popup);
-}
-function updateReportButtonState() {
-    const reportBtn = document.getElementById('reportBtn');
-    reportBtn.classList.remove('disabled');
-}
-function openReportPopup(song) {
-    reportingSong = song;
-    
-    // 報告フォームの要素が存在するか確認
-    const reportForm = document.getElementById('reportPopup');
-    if (!reportForm) {
-        console.error('Report form not found');
-        return;
-    }
-    
-    const setIfExists = (elementId, value) => {
-        const el = document.getElementById(elementId);
-        if (el) el.dataset.original = value || '';
-    };
-    
-    const setPlaceholderIfExists = (elementId, value) => {
-        const el = document.getElementById(elementId);
-        if (el) el.placeholder = value || '修正後';
-    };
-    
-    const setValueIfExists = (elementId, value) => {
-        const el = document.getElementById(elementId);
-        if (el) el.value = value || '';
-    };
-    
-    setIfExists('reportNewSongName', song['曲名']);
-    setIfExists('reportNewArtist', song['アーティスト']);
-    setIfExists('reportNewSongYomi', song['曲名の読み']);
-    setIfExists('reportNewArtistYomi', song['アーティストの読み']);
-    setIfExists('reportNewTieup', song['タイアップ']);
-    
-    setPlaceholderIfExists('reportNewSongName', song['曲名']);
-    setPlaceholderIfExists('reportNewArtist', song['アーティスト']);
-    setPlaceholderIfExists('reportNewSongYomi', song['曲名の読み']);
-    setPlaceholderIfExists('reportNewArtistYomi', song['アーティストの読み']);
-    setPlaceholderIfExists('reportNewTieup', song['タイアップ']);
-    
-    setValueIfExists('reportNewSongName', '');
-    setValueIfExists('reportNewArtist', '');
-    setValueIfExists('reportNewSongYomi', '');
-    setValueIfExists('reportNewArtistYomi', '');
-    setValueIfExists('reportNewTieup', '');
-    setValueIfExists('reporterName', '');
-    
-    document.querySelectorAll('input[name^="report"]').forEach(cb => {
-        if (cb.type === 'checkbox') cb.checked = false;
-    });
-    document.querySelectorAll('.form-input-report').forEach(input => {
-        input.disabled = true;
-    });
-    updateReportButtonDisabledState();
-    document.querySelectorAll('input[name^="report"][type="checkbox"]').forEach(cb => {
-        cb.addEventListener('change', updateReportButtonDisabledState);
-    });
-    const popup = document.getElementById('reportPopup');
-    popup.classList.remove('hidden');
-    const content = popup.querySelector('.popup-content');
-    if (content) content.scrollTop = 0;
-}
-function updateReportButtonDisabledState() {
-    const submitBtn = document.querySelector('#reportPopup .popup-submit-btn');
-    const checkedBoxes = document.querySelectorAll('input[name^="report"][type="checkbox"]:checked');
-    if (checkedBoxes.length === 0) {
-        submitBtn.disabled = true;
-        return;
-    }
-    submitBtn.disabled = false;
-}
-function toggleReportField(checkbox) {
-    const reportRow = checkbox.closest('.form-report-row');
-    const input = reportRow.querySelector('.form-input-report');
-    const originalValue = input.dataset.original || '';
-    if (checkbox.checked) {
-        input.disabled = false;
-        if (input.value === '') {
-            input.value = originalValue;
-        }
-        input.focus();
-    } else {
-        input.disabled = true;
-        input.value = '';
-    }
-    updateReportButtonDisabledState();
-}
 function toggleTieupDelete() {
     const deleteCheckbox = document.querySelector('input[name="reportTieupDelete"]');
     const tieupCheckbox = document.querySelector('input[name="reportTieup"]');
@@ -491,11 +349,26 @@ function showDetailReportPopup() {
         return;
     }
     
-    // 初期値を設定
-    document.getElementById('detailReportNewGenre1').value = song['ジャンル1'] || '';
-    document.getElementById('detailReportNewGenre2').value = song['ジャンル2'] || '';
-    document.getElementById('detailReportNewGenre3').value = song['ジャンル3'] || '';
-    document.getElementById('detailReportNewSeason').value = song['季節'] || '';
+    // 初期値を設定し、data-original属性に元の値を保存
+    const fields = [
+        { id: 'detailReportNewSongName', key: '曲名' },
+        { id: 'detailReportNewArtist', key: 'アーティスト' },
+        { id: 'detailReportNewSongYomi', key: '曲名の読み' },
+        { id: 'detailReportNewArtistYomi', key: 'アーティストの読み' },
+        { id: 'detailReportNewTieup', key: 'タイアップ' },
+        { id: 'detailReportNewGenre1', key: 'ジャンル1' },
+        { id: 'detailReportNewGenre2', key: 'ジャンル2' },
+        { id: 'detailReportNewGenre3', key: 'ジャンル3' },
+        { id: 'detailReportNewSeason', key: '季節' }
+    ];
+    
+    fields.forEach(field => {
+        const el = document.getElementById(field.id);
+        const value = song[field.key] || '';
+        el.value = value;
+        el.dataset.original = value; // 元の値を保存
+    });
+    
     document.getElementById('detailReporterName').value = '';
     
     // タグを表示
@@ -567,7 +440,8 @@ function toggleDetailReportField(checkbox, inputId) {
         input.focus();
     } else {
         input.disabled = true;
-        input.value = '';
+        // 元の値を復元
+        input.value = input.dataset.original || '';
     }
     updateDetailReportButtonDisabledState();
 }
@@ -616,6 +490,28 @@ function toggleDetailSeasonDelete() {
     updateDetailReportButtonDisabledState();
 }
 
+function toggleDetailTieupDelete() {
+    const deleteCheckbox = document.querySelector('input[name="detailReportTieupDelete"]');
+    const tieupCheckbox = document.querySelector('input[name="detailReportTieup"]');
+    const tieupInput = document.getElementById('detailReportNewTieup');
+    
+    if (deleteCheckbox.checked) {
+        // 削除がONの場合
+        tieupInput.value = '';
+        tieupInput.readOnly = true;
+        tieupCheckbox.checked = true;
+        tieupCheckbox.disabled = true;
+    } else {
+        // 削除がOFFの場合
+        tieupInput.readOnly = false;
+        tieupCheckbox.disabled = false;
+        tieupCheckbox.checked = false;  // チェックを自動的にOFFにする
+        tieupInput.value = '';
+        tieupInput.disabled = true;
+    }
+    updateDetailReportButtonDisabledState();
+}
+
 function updateDetailReportButtonDisabledState() {
     const submitBtn = document.querySelector('#detailReportPopup .popup-submit-btn');
     const isAnyChecked = document.querySelectorAll('#detailReportPopup input[type="checkbox"]:checked').length > 0;
@@ -635,6 +531,51 @@ function submitDetailReport() {
     
     const checkedItems = [];
     const updates = {};
+    
+    // 曲名
+    const songNameCheckbox = document.querySelector('input[name="detailReportSongName"]');
+    if (songNameCheckbox.checked) {
+        checkedItems.push('曲名');
+        const input = document.getElementById('detailReportNewSongName');
+        updates['修正後曲名'] = input.value.trim();
+    }
+    
+    // アーティスト
+    const artistCheckbox = document.querySelector('input[name="detailReportArtist"]');
+    if (artistCheckbox.checked) {
+        checkedItems.push('アーティスト');
+        const input = document.getElementById('detailReportNewArtist');
+        updates['修正後アーティスト'] = input.value.trim();
+    }
+    
+    // 曲名のよみがな
+    const songYomiCheckbox = document.querySelector('input[name="detailReportSongYomi"]');
+    if (songYomiCheckbox.checked) {
+        checkedItems.push('曲名のよみがな');
+        const input = document.getElementById('detailReportNewSongYomi');
+        updates['修正後曲名の読み'] = input.value.trim();
+    }
+    
+    // アーティストのよみがな
+    const artistYomiCheckbox = document.querySelector('input[name="detailReportArtistYomi"]');
+    if (artistYomiCheckbox.checked) {
+        checkedItems.push('アーティストのよみがな');
+        const input = document.getElementById('detailReportNewArtistYomi');
+        updates['修正後アーティストの読み'] = input.value.trim();
+    }
+    
+    // タイアップ
+    const tieupCheckbox = document.querySelector('input[name="detailReportTieup"]');
+    const tieupDeleteCheckbox = document.querySelector('input[name="detailReportTieupDelete"]');
+    if (tieupCheckbox.checked) {
+        checkedItems.push('タイアップ');
+        const input = document.getElementById('detailReportNewTieup');
+        updates['修正後タイアップ'] = input.value.trim();
+    }
+    if (tieupDeleteCheckbox.checked) {
+        checkedItems.push('タイアップ');
+        updates['修正後タイアップ'] = '';
+    }
     
     // ジャンル1
     const genre1Checkbox = document.querySelector('input[name="detailReportGenre1"]');
@@ -710,10 +651,18 @@ function submitDetailReport() {
         理由: reasonText,
         修正前曲名: song['曲名'] || '',
         修正前アーティスト: song['アーティスト'] || '',
+        修正前曲名の読み: song['曲名の読み'] || '',
+        修正前アーティストの読み: song['アーティストの読み'] || '',
+        修正前タイアップ: song['タイアップ'] || '',
         修正前ジャンル1: song['ジャンル1'] || '',
         修正前ジャンル2: song['ジャンル2'] || '',
         修正前ジャンル3: song['ジャンル3'] || '',
         修正前季節: song['季節'] || '',
+        修正後曲名: updates['修正後曲名'] !== undefined ? updates['修正後曲名'] : '',
+        修正後アーティスト: updates['修正後アーティスト'] !== undefined ? updates['修正後アーティスト'] : '',
+        修正後曲名の読み: updates['修正後曲名の読み'] !== undefined ? updates['修正後曲名の読み'] : '',
+        修正後アーティストの読み: updates['修正後アーティストの読み'] !== undefined ? updates['修正後アーティストの読み'] : '',
+        修正後タイアップ: updates['修正後タイアップ'] !== undefined ? updates['修正後タイアップ'] : '',
         修正後ジャンル1: updates['修正後ジャンル1'] !== undefined ? updates['修正後ジャンル1'] : '',
         修正後ジャンル2: updates['修正後ジャンル2'] !== undefined ? updates['修正後ジャンル2'] : '',
         修正後ジャンル3: updates['修正後ジャンル3'] !== undefined ? updates['修正後ジャンル3'] : '',
@@ -748,130 +697,6 @@ function submitDetailReport() {
             submitBtn.disabled = false;
             submitBtn.textContent = '報告する';
         });
-}
-function closeReportPopup(event) {
-    if (event && event.target.id !== 'reportPopup') return;
-    const popup = document.getElementById('reportPopup');
-    popup.classList.add('hidden');
-    const isList = document.getElementById('list-tab').classList.contains('active');
-    if (!isList) {
-        reportingSong = null;
-    }
-}
-function submitReport() {
-    if (!reportingSong) return;
-    const checkedItems = [];
-    const updates = {};
-    document.querySelectorAll('input[name^="report"][type="checkbox"]:checked').forEach(cb => {
-        const fieldName = cb.name;
-        const reportRow = cb.closest('.form-report-row');
-        if (!reportRow) return;
-        const input = reportRow.querySelector('.form-input-report');
-        const value = input.value.trim();
-        if (fieldName === 'reportSongName') {
-            checkedItems.push('曲名');
-            updates['修正後曲名'] = value;
-        } else if (fieldName === 'reportArtist') {
-            checkedItems.push('アーティスト');
-            updates['修正後アーティスト'] = value;
-        } else if (fieldName === 'reportSongYomi') {
-            checkedItems.push('曲名のよみがな');
-            updates['修正後曲名のよみがな'] = value;
-        } else if (fieldName === 'reportArtistYomi') {
-            checkedItems.push('アーティストのよみがな');
-            updates['修正後アーティストのよみがな'] = value;
-        } else if (fieldName === 'reportTieup') {
-            checkedItems.push('タイアップ');
-            updates['修正後タイアップ'] = value;
-        }
-    });
-    
-    // タイアップ削除トグルの処理
-    const tieupDeleteCheckbox = document.querySelector('input[name="reportTieupDelete"]:checked');
-    if (tieupDeleteCheckbox) {
-        checkedItems.push('タイアップ');
-        updates['修正後タイアップ'] = '';
-    }
-    
-    const reasonText = checkedItems.join('、') + (checkedItems.length > 0 ? 'が誤っている' : '');
-    const reportData = {
-        理由: reasonText,
-        修正前曲名: reportingSong['曲名'] || '',
-        修正前アーティスト: reportingSong['アーティスト'] || '',
-        修正前曲名のよみがな: reportingSong['曲名の読み'] || '',
-        修正前アーティストのよみがな: reportingSong['アーティストの読み'] || '',
-        修正前タイアップ: reportingSong['タイアップ'] || '',
-        修正後曲名: updates['修正後曲名'] || '',
-        修正後アーティスト: updates['修正後アーティスト'] || '',
-        修正後曲名のよみがな: updates['修正後曲名のよみがな'] || '',
-        修正後アーティストのよみがな: updates['修正後アーティストのよみがな'] || '',
-        修正後タイアップ: updates['修正後タイアップ'] || '',
-        依頼者名: document.getElementById('reporterName').value || '匿名'
-    };
-    const submitBtn = document.querySelector('#reportPopup .popup-submit-btn');
-    submitBtn.disabled = true;
-    submitBtn.textContent = '送信中...';
-    const baseUrl = 'https://script.google.com/macros/s/AKfycbz1xZ1M2AWkHuDFkOy9Hb3sY3r7M7quHtnT4lVZqHV1SNikVds7K-gFDCURHRpR7T-4/exec';
-    
-    // GETで送信（URLパラメータ）
-    const params = Object.keys(reportData)
-        .map(key => encodeURIComponent(key) + '=' + encodeURIComponent(reportData[key]))
-        .join('&');
-    const url = baseUrl + '?' + params;
-    
-    fetch(url, { method: 'GET' })
-        .then(response => response.text())
-        .then(data => {
-            closeReportPopup();
-            showReportSuccessPopup();
-            submitBtn.disabled = false;
-            submitBtn.textContent = '報告する';
-        })
-        .catch(error => {
-            console.error('Report error:', error);
-            alert('報告の送信に失敗しました。もう一度お試しください。');
-            submitBtn.disabled = false;
-            submitBtn.textContent = '報告する';
-        });
-}
-function showReportSuccessPopup() {
-    const popup = document.createElement('div');
-    popup.className = 'popup-overlay';
-    popup.innerHTML = `
-            <div class="popup-modal" onclick="event.stopPropagation()">
-                <div class="popup-header">
-                    <h2>✓ 報告完了</h2>
-                </div>
-                <div class="popup-content">
-                    <p style="text-align: center; line-height: 1.8; color: #4a5568; font-size: 16px;">
-                        報告ありがとうございました！<br><br>
-                        ご指摘いただいた内容は<br>
-                        データ改善に役立てさせていただきます。
-                    </p>
-                </div>
-                <div class="popup-footer">
-                    <button class="popup-ok-btn" onclick="closeReportSuccessPopup(this)">OK</button>
-                </div>
-            </div>
-        `;
-    document.body.appendChild(popup);
-}
-function closeReportSuccessPopup(btn) {
-    btn.closest('.popup-overlay').remove();
-    reportMode = false;
-    reportingSong = null;
-    updateFloatingReportButton();
-    const reportBtn = document.getElementById('reportBtn');
-    reportBtn.innerHTML = `
-            <svg class="report-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z" />
-            </svg>
-            <span>誤りを報告</span>
-        `;
-    updateReportButtonState();
-    performSearch();
-    renderListHeader();
-    renderListTable();
 }
 function forceRefresh() {
     closeMenu();
@@ -988,15 +813,10 @@ function createResultItem(song, query) {
     let yomiDisplay = (titleYomi || artistYomi) ? `<div class="song-yomi">${hTitleYomi} ${artistYomi ? '/ ' + hArtistYomi : ''}</div>` : '';
     let tieupDisplay = tieup ? `<div class="song-tieup"><div class="tv-icon-20"></div><span>${hTieup}</span></div>` : '';
     const tagsDisplay = createTagsHTML(song);
-    let buttonHTML = '';
-    if (reportMode) {
-        const songIndex = allSongs.indexOf(song);
-        buttonHTML = `<button class="copy-button report-button" onclick="openReportPopupByIndex(${songIndex})">報告</button>`;
-    } else {
-        const songIndex = allSongs.indexOf(song);
-        buttonHTML = (artwork ? `<button class="copy-button" onclick="openSongDetail(${songIndex})" style="bottom: 53px;">詳細</button>`:'')
-                              + `<button class="copy-button" onclick="copyToClipboard('${escapeQuotes(copyText)}')">コピー</button>`;
-    }
+    const songIndex = allSongs.indexOf(song);
+    const detailBtnClass = artwork ? 'detail-btn-with-artwork' : 'detail-btn-no-artwork';
+    let buttonHTML = `<button class="copy-button ${detailBtnClass}" onclick="openSongDetail(${songIndex})" style="bottom: 53px;">詳細</button>`
+                          + `<button class="copy-button" onclick="copyToClipboard('${escapeQuotes(copyText)}')">コピー</button>`;
     return `
         <div class="result-item">
             <div class="song-title">${hTitle}</div>
@@ -1013,43 +833,6 @@ function createResultItem(song, query) {
         </div>
       `;
 }
-function openReportPopupByIndex(index) {
-    const song = allSongs[index];
-    openReportPopup(song);
-}
-function toggleRowSelection(index) {
-    const song = filteredListSongs[index];
-    if (reportingSong === song) {
-        reportingSong = null;
-    } else {
-        reportingSong = song;
-    }
-    renderListTable();
-    updateFloatingReportButton();
-}
-function updateFloatingReportButton() {
-    const btn = document.getElementById('floatingReportBtn');
-    if (reportMode && reportingSong) {
-        btn.classList.remove('hidden');
-        // Small delay to allow display:block to apply before opacity transition
-        requestAnimationFrame(() => btn.classList.add('show'));
-        btn.disabled = false;
-    } else {
-        btn.classList.remove('show');
-        btn.disabled = true;
-        // Wait for transition to finish before hiding (approx 300ms)
-        setTimeout(() => {
-            if (!btn.classList.contains('show')) {
-                btn.classList.add('hidden');
-            }
-        }, 300);
-    }
-}
-function reportSelectedSong() {
-    if (reportingSong) {
-        openReportPopup(reportingSong);
-    }
-}
 function filterList() {
     const query = document.getElementById('listFilter').value.trim().toLowerCase();
     filteredListSongs = !query ? [...allSongs] : allSongs.filter(song =>
@@ -1059,6 +842,7 @@ function filterList() {
         (song['アーティストの読み'] || '').toLowerCase().includes(query) ||
         (song['タイアップ'] || '').toLowerCase().includes(query)
     );
+    console.log('filterList:', filteredListSongs.length, 'songs after filter');
     sortData(currentSort.key, currentSort.ascending);
     currentPage = 1;
     renderListTable();
@@ -1084,6 +868,7 @@ function sortData(key, ascending) {
     });
 }
 function renderListTable() {
+    console.log('renderListTable called, filteredListSongs.length=', filteredListSongs.length);
     const tbody = document.getElementById('songListBody');
     tbody.innerHTML = '';
     const table = document.getElementById('songsTable');
@@ -1093,23 +878,21 @@ function renderListTable() {
         table.classList.remove('nowrap-table');
     }
     if (filteredListSongs.length === 0) {
-        const visibleCols = appSettings.listColumns.filter(c => c.visible).length + (reportMode ? 1 : 0);
+        const visibleCols = appSettings.listColumns.filter(c => c.visible).length + (0);
         tbody.innerHTML = `<tr><td colspan="${visibleCols}" style="text-align:center; padding:20px;">該当する曲がありません</td></tr>`;
         renderPagination(0);
         return;
     }
     const start = (currentPage - 1) * itemsPerPage;
     const pageItems = filteredListSongs.slice(start, start + itemsPerPage);
+    console.log('Rendering', pageItems.length, 'songs');
     tbody.innerHTML = pageItems.map((song, idx) => {
         let rowHtml = '';
-        if (reportMode) {
-            const isSelected = (song === reportingSong) ? ' selected-row' : '';
-            rowHtml = `<tr class="report-row-selectable${isSelected}" onclick="toggleRowSelection(${start + idx})">`;
-        } else {
-            rowHtml = '<tr>';
-        }
+        const songIndex = allSongs.indexOf(song);
+        const isSelected = (song === window.selectedListSong) ? ' list-detail-selected' : '';
+        rowHtml = `<tr class="list-row-selectable${isSelected}" onclick="selectListRowForDetail(${start + idx}, event)">`;
         appSettings.listColumns.forEach(col => {
-            if (col.visible || reportMode) {
+            if (col.visible) {
                 let displayVal = '';
                 if (col.key === 'タグ') {
                     // タグ列
@@ -1333,6 +1116,15 @@ window.onload = function () {
     fetchFreshSongData();
 };
 function switchTab(tabName) {
+    // リスト選択状態をリセット
+    if (tabName !== 'list') {
+        selectedListSong = null;
+        const btnContainer = document.getElementById('listDetailButtonContainer');
+        if (btnContainer) {
+            btnContainer.classList.add('hidden');
+        }
+    }
+    
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.classList.toggle('active', btn.getAttribute('onclick').includes(tabName));
     });
@@ -1343,9 +1135,9 @@ function switchTab(tabName) {
     const target = document.getElementById(tabName + '-tab');
     target.classList.add('active');
     target.classList.remove('hidden');
-    updateReportButtonState();
 }
 function onDataLoaded(data, isCached) {
+    console.log('onDataLoaded called with', data.length, 'songs');
     allSongs = data;
     filteredListSongs = [...allSongs];
     document.getElementById('loadingOverlay').classList.add('hidden');
@@ -1363,7 +1155,7 @@ function onDataLoaded(data, isCached) {
         }
     }
     localStorage.removeItem('lastActiveTab');
-    sortData(currentSort.key, currentSort.ascending);
+    // 全曲一覧タブも常に最新の状態を保つ
     renderListTable();
 }
 function onError(error) {
@@ -1906,4 +1698,52 @@ function closeSongDetail(event) {
     }
     
     document.getElementById('songDetailPopup').classList.add('hidden');
+}
+
+// 全曲一覧のテーブル行を選択して詳細ボタンを表示する
+function selectListRowForDetail(index, event) {
+    const song = filteredListSongs[index];
+    
+    // 同じ行をもう一度クリックした場合は選択解除
+    if (selectedListSong === song) {
+        selectedListSong = null;
+        updateListDetailButton();
+    } else {
+        selectedListSong = song;
+        updateListDetailButton();
+    }
+    
+    renderListTable();
+}
+
+// 全曲一覧の詳細ボタンを更新/表示する
+function updateListDetailButton() {
+    let btnContainer = document.getElementById('listDetailButtonContainer');
+    
+    if (!selectedListSong) {
+        // ボタンを非表示にする
+        if (btnContainer) {
+            btnContainer.classList.add('hidden');
+        }
+        return;
+    }
+    
+    // ボタンコンテナがない場合は作成
+    if (!btnContainer) {
+        btnContainer = document.createElement('div');
+        btnContainer.id = 'listDetailButtonContainer';
+        btnContainer.className = 'list-detail-floating-button';
+        document.body.appendChild(btnContainer);
+    }
+    
+    // ボタンを表示
+    btnContainer.classList.remove('hidden');
+    
+    // 詳細ボタンのクリックハンドラを作成
+    const songIndex = allSongs.indexOf(selectedListSong);
+    btnContainer.innerHTML = `
+        <button class="list-detail-btn" onclick="openSongDetail(${songIndex})" title="詳細情報を表示">
+            <span style="font-size: 24px;">ℹ</span>
+        </button>
+    `;
 }
