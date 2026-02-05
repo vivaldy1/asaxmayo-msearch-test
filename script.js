@@ -1725,9 +1725,15 @@ function updateListDetailButton() {
         btnContainer.classList.remove('show');
     } else {
         const songIndex = allSongs.indexOf(selectedListSong);
+        const songTitle = selectedListSong['曲名'] || '';
+        const songArtist = selectedListSong['アーティスト'] || '';
         
         detailBtn.onclick = function() {
             openSongDetail(songIndex);
+        };
+        
+        detailCopyBtn.onclick = function() {
+            copyToClipboard(songTitle + '／' + songArtist);
         };
         
         btnContainer.classList.add('show');
