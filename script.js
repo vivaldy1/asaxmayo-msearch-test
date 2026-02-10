@@ -953,15 +953,35 @@ function createPageBtn(text, pageNum) {
 function highlightText(text, query) {
     if (!query || !text) return escapeHtml(text);
     
-    // 元のテキストで検索対象とマッチ位置を取得
-    const escapedQuery = escapeRegex(query);
-    const searchRegex = new RegExp(escapedQuery, 'gi');
+    // 正規化（スペース削除）
+    const normalizedText = text.replace(/ /g, '');
+    const normalizedQuery = escapeRegex(query.replace(/ /g, ''));
+    const searchRegex = new RegExp(normalizedQuery, 'gi');
+    
+    // 正規化されたテキスト上でマッチを取得
     const matches = [];
     let match;
-    
-    while ((match = searchRegex.exec(text)) !== null) {
+    while ((match = searchRegex.exec(normalizedText)) !== null) {
         matches.push({ start: match.index, end: match.index + match[0].length });
     }
+    
+    // 正規化前テキストのスペース位置をマップ: normalizedIndex → originalIndex
+    const indexMap = {};
+    let normalizedIdx = 0;
+    for (let i = 0; i < text.length; i++) {
+        if (text[i] !== ' ') {
+            indexMap[normalizedIdx] = i;
+            normalizedIdx++;
+        }
+    }
+    // 最後のインデックスもマップ
+    indexMap[normalizedIdx] = text.length;
+    
+    // マッチ位置を元のテキスト上の位置に変換
+    const originalMatches = matches.map(m => ({
+        start: indexMap[m.start],
+        end: indexMap[m.end]
+    }));
     
     // マッチ位置を記録しながら、文字ごとにエスケープしてハイライトを適用
     let result = '';
@@ -971,7 +991,7 @@ function highlightText(text, query) {
         const char = text[i];
         
         // このインデックスがマッチ範囲内かを確認
-        const isInMatch = matches.some(m => i >= m.start && i < m.end);
+        const isInMatch = originalMatches.some(m => i >= m.start && i < m.end);
         
         // ハイライト状態の変化
         if (isInMatch && !inHighlight) {
@@ -1574,6 +1594,12 @@ function openSongDetail(songIndex) {
     
     const content = document.getElementById('songDetailContent');
     
+    
+    detailCopyBtn.onclick = function() {
+        copyToClipboard(song['曲名'] + '／' + song['アーティスト']);
+    };
+    
+    
     // ロボットSVG
     const robotSVG = `<svg width="32" height="32" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" style="display: inline; vertical-align: text-bottom;">
         <g fill="currentColor">
@@ -1730,10 +1756,6 @@ function updateListDetailButton() {
         
         detailBtn.onclick = function() {
             openSongDetail(songIndex);
-        };
-        
-        detailCopyBtn.onclick = function() {
-            copyToClipboard(songTitle + '／' + songArtist);
         };
         
         btnContainer.classList.add('show');
