@@ -262,7 +262,7 @@
             </div>
         </div>
     </div>
-    <div id="detailReportPopup" class="popup-overlay hidden" onclick="closeDetailReportPopup(event)">
+    <div id="detailReportPopup" class="popup-overlay hidden">
         <div class="popup-modal" onclick="event.stopPropagation()">
             <div class="popup-header">
                 <h2>詳細情報の誤り報告</h2>
@@ -415,6 +415,22 @@
             <div class="popup-footer">
                 <button class="popup-cancel-btn" onclick="closeDetailReportPopup()">キャンセル</button>
                 <button class="popup-submit-btn" onclick="submitDetailReport()">報告する</button>
+            </div>
+        </div>
+    </div>
+    <!-- 感謝メッセージポップアップ -->
+    <div id="thanksPopup" class="popup-overlay hidden" onclick="closeThankYouPopup(event)">
+        <div class="popup-modal" onclick="event.stopPropagation()">
+            <div class="popup-header">
+                <h2>報告完了</h2>
+            </div>
+            <div class="popup-content" style="text-align: center; padding: 40px 20px;">
+                <div style="font-size: 48px; margin-bottom: 20px;">✓</div>
+                <p style="font-size: 18px; color: #4a5568; margin-bottom: 10px;">ご報告ありがとうございます！</p>
+                <p style="font-size: 14px; color: #718096;">いただきました情報は今後のデータ改善に役立てさせていただきます。</p>
+            </div>
+            <div class="popup-footer">
+                <button class="popup-ok-btn" onclick="closeThankYouPopup()">閉じる</button>
             </div>
         </div>
     </div>

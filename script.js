@@ -334,6 +334,23 @@ function closeDetailReportPopup(event) {
     document.getElementById('detailReportForm').reset();
 }
 
+function showThankYouPopup() {
+    const popup = document.getElementById('thanksPopup');
+    popup.classList.remove('hidden');
+    // 自動閉じる機能を追加（オプション：3秒後に自動で閉じる）
+    // setTimeout(() => {
+    //     closeThankYouPopup();
+    //     closeSongDetail();
+    // }, 3000);
+}
+
+function closeThankYouPopup(event) {
+    if (event && event.target.id !== 'thanksPopup') return;
+    const popup = document.getElementById('thanksPopup');
+    popup.classList.add('hidden');
+    closeSongDetail();
+}
+
 function showDetailReportPopup() {
     const popup = document.getElementById('detailReportPopup');
     popup.classList.remove('hidden');
@@ -685,9 +702,10 @@ function submitDetailReport() {
     fetch(url, { method: 'GET' })
         .then(response => response.text())
         .then(data => {
+            // 詳細レポートポップアップを閉じる
             closeDetailReportPopup();
-            closeSongDetail();
-            showReportSuccessPopup();
+            // 感謝メッセージポップアップを表示
+            showThankYouPopup();
             submitBtn.disabled = false;
             submitBtn.textContent = '報告する';
         })
@@ -835,11 +853,12 @@ function createResultItem(song, query) {
 }
 function filterList() {
     const query = document.getElementById('listFilter').value.trim().toLowerCase();
+    const normalizedQuery = query.replace(/ /g, ''); // スペースを除去した検索キーを作成
     filteredListSongs = !query ? [...allSongs] : allSongs.filter(song =>
         (song['曲名'] || '').toLowerCase().includes(query) ||
-        (song['曲名の読み'] || '').toLowerCase().includes(query) ||
+        (song['曲名の読み'] || '').toLowerCase().replace(/ /g, '').includes(normalizedQuery) ||
         (song['アーティスト'] || '').toLowerCase().includes(query) ||
-        (song['アーティストの読み'] || '').toLowerCase().includes(query) ||
+        (song['アーティストの読み'] || '').toLowerCase().replace(/ /g, '').includes(normalizedQuery) ||
         (song['タイアップ'] || '').toLowerCase().includes(query)
     );
     console.log('filterList:', filteredListSongs.length, 'songs after filter');
@@ -1109,6 +1128,21 @@ document.addEventListener('DOMContentLoaded', function () {
         listFilter.focus();
         filterList();
     });
+    
+    // メニュー以外をクリックするとメニューを閉じる
+    document.addEventListener('click', function (e) {
+        const burgerContainer = document.querySelector('.burger-container');
+        const burgerMenu = document.getElementById('burgerMenu');
+        const isMenuHidden = burgerMenu.classList.contains('hidden');
+        
+        // メニューが表示されている場合のみ
+        if (!isMenuHidden) {
+            // クリック対象がバーガーコンテナの内側でないならメニューを閉じる
+            if (!burgerContainer.contains(e.target)) {
+                closeMenu();
+            }
+        }
+    });
 });
 window.onload = function () {
     initDragScroll();
@@ -1235,18 +1269,29 @@ var selectedGenres = [];
 var selectedDecades = []; // 年代フィルター用
 var tagColorMap = {}; // Maps tag values to color indices
 
-// Color palette for tags
+/**
+ * 60色のタグ用カラーパレット
+ * 構成: { bg: 背景色, text: 文字色 }
+ */
 const tagColors = [
-    { bg: '#FFE0B2', text: '#E65100' }, // Orange
-    { bg: '#C8E6C9', text: '#1B5E20' }, // Green
-    { bg: '#BBDEFB', text: '#0D47A1' }, // Blue
-    { bg: '#F8BBD0', text: '#880E4F' }, // Pink
-    { bg: '#B3E5FC', text: '#01579B' }, // Light Blue
-    { bg: '#E1BEE7', text: '#4A148C' }, // Purple
-    { bg: '#C5CAE9', text: '#1A237E' }, // Indigo
-    { bg: '#FFE0B2', text: '#BF360C' }, // Deep Orange
-    { bg: '#F0F4C3', text: '#33691E' }, // Light Green
-    { bg: '#FCE4EC', text: '#C2185B' }, // Rose
+    // 1-10
+    { bg: '#FFE0B2', text: '#E65100' }, { bg: '#C8E6C9', text: '#1B5E20' },
+    { bg: '#BBDEFB', text: '#0D47A1' }, { bg: '#F8BBD0', text: '#880E4F' },
+    { bg: '#B3E5FC', text: '#01579B' }, { bg: '#E1BEE7', text: '#4A148C' },
+    { bg: '#C5CAE9', text: '#1A237E' }, { bg: '#FFE0B2', text: '#BF360C' },
+    { bg: '#F0F4C3', text: '#33691E' }, { bg: '#FCE4EC', text: '#C2185B' },
+    // 11-20
+    { bg: '#FFF9C4', text: '#F57F17' }, { bg: '#B2DFDB', text: '#004D40' },
+    { bg: '#FFECB3', text: '#FF6F00' }, { bg: '#D1C4E9', text: '#311B92' },
+    { bg: '#DCEDC8', text: '#33691E' }, { bg: '#B2EBF2', text: '#006064' },
+    { bg: '#FFCCBC', text: '#BF360C' }, { bg: '#D7CCC8', text: '#3E2723' },
+    { bg: '#F5F5F5', text: '#212121' }, { bg: '#CFD8DC', text: '#263238' },
+    // 21-30 (Warm tones)
+    { bg: '#FFF3E0', text: '#E65100' }, { bg: '#FBE9E7', text: '#D84315' },
+    { bg: '#FFFDE7', text: '#827717' }, { bg: '#FFF8E1', text: '#FF8F00' },
+    { bg: '#FEF9E7', text: '#9A7D0A' }, { bg: '#FDF2E9', text: '#A04000' },
+    { bg: '#FBEEE6', text: '#922B21' }, { bg: '#F9EBEA', text: '#7B241C' },
+    { bg: '#FDEDEC', text: '#943126' }, { bg: '#FEF5E7', text: '#7E5109' }
 ];
 
 function getTagColor(tagValue, isGenre = false) {
