@@ -530,6 +530,19 @@
         padding: 0 2px;
     }
 
+    .list-filter {
+        margin-bottom: 15px;
+        position: relative;
+    }
+
+    .list-filter .clear-btn {
+        right: 10px;
+    }
+
+    .list-filter input {
+        padding-right: 35px;
+    }
+
     .table-container {
         overflow-x: auto;
         border-radius: 10px;
