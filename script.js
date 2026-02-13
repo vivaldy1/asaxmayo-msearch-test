@@ -1105,7 +1105,7 @@ document.addEventListener('DOMContentLoaded', function () {
         searchInput.focus();
         performSearch();
     });
-    searchInput.addEventListener('keypress', function (e) {
+    searchInput.addEventListener('keydown', function (e) {
         if (e.key === 'Enter') { e.preventDefault(); searchInput.blur(); }
     });
     searchRadios.forEach(radio => radio.addEventListener('change', performSearch));
@@ -1119,7 +1119,7 @@ document.addEventListener('DOMContentLoaded', function () {
         clearTimeout(listFilterTimeout);
         listFilterTimeout = setTimeout(filterList, 300);
     });
-    listFilter.addEventListener('keypress', function (e) {
+    listFilter.addEventListener('keydown', function (e) {
         if (e.key === 'Enter') { e.preventDefault(); listFilter.blur(); }
     });
     filterClear.addEventListener('click', function () {
@@ -1576,25 +1576,25 @@ function createTagsHTML(song) {
     if (song['季節'] && song['季節'].trim()) {
         const tagValue = song['季節'].trim();
         const color = getTagColor(tagValue, false);
-        html += `<span class="tag" style="background-color: ${color.bg}; color: ${color.text};">${tagValue}</span>`;
+        html += `<span class="tag" style="background-color: ${color.bg}; color: ${color.text}; cursor: pointer;" onclick="onTagClick('${escapeQuotes(tagValue)}', 'season')">${tagValue}</span>`;
     }
     
     if (song['ジャンル1'] && song['ジャンル1'].trim()) {
         const tagValue = song['ジャンル1'].trim();
         const color = getTagColor(tagValue, true);
-        html += `<span class="tag" style="background-color: ${color.bg}; color: ${color.text};">${tagValue}</span>`;
+        html += `<span class="tag" style="background-color: ${color.bg}; color: ${color.text}; cursor: pointer;" onclick="onTagClick('${escapeQuotes(tagValue)}', 'genre')">${tagValue}</span>`;
     }
     
     if (song['ジャンル2'] && song['ジャンル2'].trim()) {
         const tagValue = song['ジャンル2'].trim();
         const color = getTagColor(tagValue, true);
-        html += `<span class="tag" style="background-color: ${color.bg}; color: ${color.text};">${tagValue}</span>`;
+        html += `<span class="tag" style="background-color: ${color.bg}; color: ${color.text}; cursor: pointer;" onclick="onTagClick('${escapeQuotes(tagValue)}', 'genre')">${tagValue}</span>`;
     }
     
     if (song['ジャンル3'] && song['ジャンル3'].trim()) {
         const tagValue = song['ジャンル3'].trim();
         const color = getTagColor(tagValue, true);
-        html += `<span class="tag" style="background-color: ${color.bg}; color: ${color.text};">${tagValue}</span>`;
+        html += `<span class="tag" style="background-color: ${color.bg}; color: ${color.text}; cursor: pointer;" onclick="onTagClick('${escapeQuotes(tagValue)}', 'genre')">${tagValue}</span>`;
     }
     
     html += '</div>';
@@ -1630,6 +1630,39 @@ function createTagsInlineHTML(song) {
     
     html += '</div>';
     return html;
+}
+
+// タグクリック時の処理
+function onTagClick(tagValue, tagType) {
+    // 検索ボックスをクリア
+    document.getElementById('searchQuery').value = '';
+    document.getElementById('resultCountInline').textContent = '';
+    
+    // 既存のタグフィルターをリセット
+    selectedSeasons = [];
+    selectedGenres = [];
+    selectedDecades = [];
+    
+    // クリックしたタグを選択状態に設定
+    if (tagType === 'season') {
+        selectedSeasons = [tagValue];
+    } else if (tagType === 'genre') {
+        selectedGenres = [tagValue];
+    }
+    
+    // タグフィルターボタンの表示を更新
+    updateTagButtonAppearance();
+    
+    // 検索ボックスへフォーカス（オプション）
+    document.getElementById('searchQuery').focus();
+    
+    // 検索を実行
+    performSearch();
+    
+    // ページ上部にスクロール
+    setTimeout(() => {
+        document.getElementById('searchResults').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
 }
 
 // Song Detail Modal Functions
