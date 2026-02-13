@@ -1653,15 +1653,12 @@ function onTagClick(tagValue, tagType) {
     // タグフィルターボタンの表示を更新
     updateTagButtonAppearance();
     
-    // 検索ボックスへフォーカス（オプション）
-    document.getElementById('searchQuery').focus();
-    
     // 検索を実行
     performSearch();
     
-    // ページ上部にスクロール
+    // ページトップにスクロール
     setTimeout(() => {
-        document.getElementById('searchResults').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     }, 100);
 }
 
