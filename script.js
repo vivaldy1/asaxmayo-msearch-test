@@ -1106,7 +1106,12 @@ document.addEventListener('DOMContentLoaded', function () {
         performSearch();
     });
     searchInput.addEventListener('keydown', function (e) {
-        if (e.key === 'Enter') { e.preventDefault(); searchInput.blur(); }
+        if (e.key === 'Enter') { 
+            e.preventDefault();
+            clearTimeout(searchTimeout);  // ペンディング中のタイムアウトをクリア
+            performSearch();  // 即座に検索を実行
+            searchInput.blur();  // フォーカスを外す
+        }
     });
     searchRadios.forEach(radio => radio.addEventListener('change', performSearch));
     const listFilter = document.getElementById('listFilter');
@@ -1120,7 +1125,12 @@ document.addEventListener('DOMContentLoaded', function () {
         listFilterTimeout = setTimeout(filterList, 300);
     });
     listFilter.addEventListener('keydown', function (e) {
-        if (e.key === 'Enter') { e.preventDefault(); listFilter.blur(); }
+        if (e.key === 'Enter') { 
+            e.preventDefault();
+            clearTimeout(listFilterTimeout);  // ペンディング中のタイムアウトをクリア
+            filterList();  // 即座に検索を実行
+            listFilter.blur();  // フォーカスを外す
+        }
     });
     filterClear.addEventListener('click', function () {
         listFilter.value = '';
