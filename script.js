@@ -1179,6 +1179,41 @@ window.onload = function () {
     console.log('Fetching fresh data');
     fetchFreshSongData();
 };
+function resetToHome() {
+    // 検索キーワードをクリア
+    const searchInput = document.getElementById('searchQuery');
+    searchInput.value = '';
+    const searchClear = document.getElementById('searchClear');
+    if (searchClear) searchClear.classList.remove('visible');
+
+    // 検索タイプを「全て」にリセット
+    const allRadio = document.querySelector('input[name="searchType"][value="all"]');
+    if (allRadio) allRadio.checked = true;
+
+    // タグフィルターをリセット
+    selectedSeasons = [];
+    selectedGenres = [];
+    selectedDecades = [];
+    updateTagButtonAppearance();
+
+    // 全曲一覧のフィルターをクリア
+    const listFilter = document.getElementById('listFilter');
+    if (listFilter) {
+        listFilter.value = '';
+        const filterClear = document.getElementById('filterClear');
+        if (filterClear) filterClear.classList.remove('visible');
+        filteredListSongs = [...allSongs];
+        sortData(currentSort.key, currentSort.ascending);
+        currentPage = 1;
+    }
+
+    // 検索タブに切り替え
+    switchTab('search');
+
+    // 検索結果をクリア（キーワードもタグも空なので空表示になる）
+    performSearch();
+}
+
 function switchTab(tabName) {
     // リスト選択状態をリセット
     if (tabName !== 'list') {
