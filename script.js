@@ -1850,6 +1850,10 @@ function closeSongDetail(event) {
 
 // 全曲一覧のテーブル行を選択して詳細ボタンを表示する
 function selectListRowForDetail(index, event) {
+    // テキストがドラッグ選択されている場合は行選択しない
+    const selection = window.getSelection();
+    if (selection && selection.toString().length > 0) return;
+
     const song = filteredListSongs[index];
     
     // 同じ行をもう一度クリックした場合は選択解除
