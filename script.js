@@ -830,6 +830,8 @@ function createResultItem(song, query) {
     const copyText = title + '／' + artist;
     let yomiDisplay = (titleYomi || artistYomi) ? `<div class="song-yomi">${hTitleYomi} ${artistYomi ? '/ ' + hArtistYomi : ''}</div>` : '';
     let tieupDisplay = tieup ? `<div class="song-tieup"><div class="tv-icon-20"></div><span>${hTieup}</span></div>` : '';
+    
+    const ytLink = createYoutubeLink(song['最終演奏動画ID'], song['最終演奏タイムスタンプ']);
     const tagsDisplay = createTagsHTML(song);
     const songIndex = allSongs.indexOf(song);
     const detailBtnClass = artwork ? 'detail-btn-with-artwork' : 'detail-btn-no-artwork';
@@ -843,7 +845,7 @@ function createResultItem(song, query) {
             ${tieupDisplay}
             ${`<div class="song-meta">
                   <span>演奏回数: ${count}回</span>
-                  <span>最終演奏: ${date}</span>
+                  <span>最終演奏: ${date}${ytLink}</span>
                 </div>`
         }
             ${tagsDisplay}
@@ -1049,6 +1051,22 @@ function escapeHtml(text) {
     return String(text ?? '').replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
 }
 function escapeQuotes(text) { return text.replace(/'/g, "\\'").replace(/"/g, '\\"'); }
+
+function createYoutubeLink(videoId, timestampStr) {
+    if (!videoId || !timestampStr) return '';
+    const parts = timestampStr.split(':');
+    let seconds = 0;
+    if (parts.length === 3) {
+        seconds = parseInt(parts[0], 10) * 3600 + parseInt(parts[1], 10) * 60 + parseInt(parts[2], 10);
+    } else if (parts.length === 2) {
+        seconds = parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
+    } else {
+        seconds = parseInt(parts[0], 10);
+    }
+    if (isNaN(seconds)) seconds = 0;
+    
+    return `<a href="https://youtu.be/${videoId}?t=${seconds}" target="_blank" title="YouTubeでシーク: ${timestampStr}" class="yt-timestamp-link" onclick="event.stopPropagation();"><svg viewBox="0 0 24 24" width="18" height="18" style="vertical-align: middle; margin-left: 5px; fill: #FF0000; margin-bottom: 2px;"><path d="M21.582,6.186c-0.23-0.86-0.908-1.538-1.768-1.768C18.254,4,12,4,12,4S5.746,4,4.186,4.418 c-0.86,0.23-1.538,0.908-1.768,1.768C2,7.746,2,12,2,12s0,4.254,0.418,5.814c0.23,0.86,0.908,1.538,1.768,1.768 C5.746,20,12,20,12,20s6.254,0,7.814-0.418c0.86-0.23,1.538-0.908,1.768-1.768C22,16.254,22,12,22,12S22,7.746,21.582,6.186z M9.636,15.504V8.496L15.814,12L9.636,15.504z"/></svg></a>`;
+}
 
 // ISO形式の日付をYYYY/MM/DD形式にフォーマット
 function formatDate(dateStr) {
@@ -1339,6 +1357,20 @@ const tagColors = [
     { bg: '#FDEDEC', text: '#943126' }, { bg: '#FEF5E7', text: '#7E5109' }
 ];
 
+// 特定の主要タグには固定の色インデックスを割り当てて被りを防ぐ
+const predefinedTagColors = {
+    'g_J-POP': 2,          // Blue
+    'g_j-pop': 2,
+    'g_アニメ': 12,         // Orange
+    'g_ボカロ': 15,         // Cyan
+    'g_ボーカロイド': 15,
+    'g_ロック': 27,        // Red
+    's_春': 3,             // Pink
+    's_夏': 0,             // Orange
+    's_秋': 17,            // Brown
+    's_冬': 5              // Purple/Blue
+};
+
 function getTagColor(tagValue, isGenre = false) {
     if (!tagValue || !tagValue.trim()) return { bg: '#f0f0f0', text: '#666' };
     
@@ -1350,8 +1382,13 @@ function getTagColor(tagValue, isGenre = false) {
         return tagColors[tagColorMap[key]];
     }
     
-    // 新しいタグの場合、色を割り当て（ハッシュ値に基づく一貫性）
-    // 同じキーは常に同じ色を返すようにする
+    // 固定色が定義されている場合はそれを優先
+    if (predefinedTagColors[key] !== undefined) {
+        tagColorMap[key] = predefinedTagColors[key];
+        return tagColors[predefinedTagColors[key]];
+    }
+    
+    // その他のタグの場合、色を割り当て（ハッシュ値に基づく一貫性）
     let hashCode = 0;
     for (let i = 0; i < key.length; i++) {
         hashCode = ((hashCode << 5) - hashCode) + key.charCodeAt(i);
@@ -1570,6 +1607,56 @@ function updateTagButtonAppearance() {
         tagBtn.style.borderColor = '#e2e8f0';
         tagBtn.style.color = '#718096';
     }
+    renderActiveTags();
+}
+
+function renderActiveTags() {
+    const container = document.getElementById('activeTagsContainer');
+    if (!container) return;
+    
+    if (selectedSeasons.length === 0 && selectedGenres.length === 0 && selectedDecades.length === 0) {
+        container.innerHTML = '';
+        container.classList.add('hidden');
+        return;
+    }
+    
+    let html = '';
+    
+    selectedSeasons.forEach(season => {
+        const color = getTagColor(season, false);
+        html += `<span class="active-tag-chip" style="background-color: ${color.bg}; color: ${color.text};">${escapeHtml(season)} <span class="active-tag-remove" onclick="removeTag('${escapeQuotes(season)}', 'season')">×</span></span>`;
+    });
+    
+    selectedGenres.forEach(genre => {
+        const color = getTagColor(genre, true);
+        html += `<span class="active-tag-chip" style="background-color: ${color.bg}; color: ${color.text};">${escapeHtml(genre)} <span class="active-tag-remove" onclick="removeTag('${escapeQuotes(genre)}', 'genre')">×</span></span>`;
+    });
+    
+    selectedDecades.forEach(decade => {
+        // 年代のタグ用（適当なデフォルト色）
+        html += `<span class="active-tag-chip" style="background-color: #E2E8F0; color: #4A5568;">${escapeHtml(decade)} <span class="active-tag-remove" onclick="removeTag('${escapeQuotes(decade)}', 'decade')">×</span></span>`;
+    });
+    
+    container.innerHTML = html;
+    container.classList.remove('hidden');
+}
+
+function removeTag(tagValue, tagType) {
+    if (tagType === 'season') {
+        selectedSeasons = selectedSeasons.filter(s => s !== tagValue);
+        const btn = document.querySelector(`#seasonFilterOptions .tag-filter-option[data-value="${tagValue.replace(/"/g, '\\"')}"]`);
+        if (btn) btn.classList.remove('selected');
+    } else if (tagType === 'genre') {
+        selectedGenres = selectedGenres.filter(g => g !== tagValue);
+        const btn = document.querySelector(`#genreFilterOptions .tag-filter-option[data-value="${tagValue.replace(/"/g, '\\"')}"]`);
+        if (btn) btn.classList.remove('selected');
+    } else if (tagType === 'decade') {
+        selectedDecades = selectedDecades.filter(d => d !== tagValue);
+        const btn = document.querySelector(`#decadeFilterOptions .tag-filter-option[data-value="${tagValue.replace(/"/g, '\\"')}"]`);
+        if (btn) btn.classList.remove('selected');
+    }
+    updateTagButtonAppearance();
+    performSearch();
 }
 
 function closeTagFilterPopup(event) {
@@ -1780,6 +1867,7 @@ function openSongDetail(songIndex) {
     // 日付をフォーマット
     const finalPlayDate = formatDate(song['最終演奏']);
     const releaseDate = formatDate(song['リリース日']);
+    const ytLink = createYoutubeLink(song['最終演奏動画ID'], song['最終演奏タイムスタンプ']);
     
     // ジャケット画像を背景に設定
     const artworkBg = song['アートワークURL'] ? `background: linear-gradient(rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0.75)), url('${escapeHtml(song['アートワークURL'])}');` : '';
@@ -1810,7 +1898,7 @@ function openSongDetail(songIndex) {
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
                 <div>
                     <div style="font-size: 11px; color: #718096; text-transform: uppercase; letter-spacing: 0.5px;">最終演奏</div>
-                    <div style="font-size: 14px; color: #2d3748; margin-top: 4px; font-weight: 500;">${escapeHtml(finalPlayDate)}</div>
+                    <div style="font-size: 14px; color: #2d3748; margin-top: 4px; font-weight: 500; display:inline-flex; align-items:center;">${escapeHtml(finalPlayDate)}${ytLink}</div>
                 </div>
                 <div>
                     <div style="font-size: 11px; color: #718096; text-transform: uppercase; letter-spacing: 0.5px;">演奏回数</div>
