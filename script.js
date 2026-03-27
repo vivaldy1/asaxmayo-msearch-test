@@ -355,12 +355,9 @@ function showDetailReportPopup() {
     const popup = document.getElementById('detailReportPopup');
     popup.classList.remove('hidden');
     
-    // 詳細画面から曲情報を取得
-    const content = document.getElementById('songDetailContent');
-    const songTitle = content.querySelector('[style*="font-size: 16px; font-weight: bold"]')?.textContent || '';
-    
-    // allSongsから該当する曲を探す
-    const song = allSongs.find(s => s['曲名'] === songTitle);
+    // 現在開いている曲情報を正確に取得
+    if (currentSongDetailIndex === -1) return;
+    const song = allSongs[currentSongDetailIndex];
     if (!song) {
         document.getElementById('detailReportForm').reset();
         return;
@@ -538,12 +535,9 @@ function updateDetailReportButtonDisabledState() {
 function submitDetailReport() {
     if (!allSongs || allSongs.length === 0) return;
     
-    // 詳細画面から曲を特定
-    const content = document.getElementById('songDetailContent');
-    const songTitle = content.querySelector('[style*="font-size: 16px; font-weight: bold"]')?.textContent || '';
-    
-    // allSongsから該当する曲を探す
-    const song = allSongs.find(s => s['曲名'] === songTitle);
+    // 現在開いている曲情報を正確に取得
+    if (currentSongDetailIndex === -1) return;
+    const song = allSongs[currentSongDetailIndex];
     if (!song) return;
     
     const checkedItems = [];
@@ -1795,7 +1789,10 @@ function onTagClick(tagValue, tagType) {
 }
 
 // Song Detail Modal Functions
+let currentSongDetailIndex = -1;
+
 function openSongDetail(songIndex) {
+    currentSongDetailIndex = songIndex;
     const song = allSongs[songIndex];
     if (!song) return;
     
