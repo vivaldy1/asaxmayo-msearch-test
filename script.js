@@ -2142,9 +2142,8 @@ function spinRoulette() {
     const spinBtn = document.getElementById('randomSpinBtn');
     if (spinBtn) spinBtn.disabled = true;
 
-    // スロットマシンのアイテムを生成
-    const others = songNames.filter(n => n !== chosenSong['曲名']);
-    const pool = others.length > 0 ? others : songNames;
+    // スロットマシンのアイテムを生成（本来のルーレット感を出すため、全ての候補をごちゃ混ぜにする）
+    const pool = songNames;
     
     // アイテム数30個の長さを生成
     const itemCount = 30;
