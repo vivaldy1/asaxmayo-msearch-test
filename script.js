@@ -1796,19 +1796,7 @@ function onTagClick(tagValue, tagType) {
 // Song Detail Modal Functions
 let currentSongDetailIndex = -1;
 
-function openSongDetail(songIndex) {
-    currentSongDetailIndex = songIndex;
-    const song = allSongs[songIndex];
-    if (!song) return;
-    
-    const content = document.getElementById('songDetailContent');
-    
-    
-    detailCopyBtn.onclick = function() {
-        copyToClipboard(song['曲名'] + '／' + song['アーティスト']);
-    };
-    
-    
+function generateSongDetailHTML(song) {
     // ロボットSVG
     const robotSVG = `<svg width="32" height="32" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" style="display: inline; vertical-align: text-bottom;">
         <g fill="currentColor">
@@ -1874,7 +1862,7 @@ function openSongDetail(songIndex) {
     // ジャケット画像を背景に設定
     const artworkBg = song['アートワークURL'] ? `background: linear-gradient(rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0.75)), url('${escapeHtml(song['アートワークURL'])}');` : '';
     
-    content.innerHTML = `
+    return `
         <div style="position: relative; height: 150px; border-radius: 8px; overflow: clip; background: linear-gradient(56deg, rgba(102, 126, 234, 0.1) 0%, rgba(102, 126, 234, 0.05) 100%); ${artworkBg} background-size: cover; background-position: bottom; animation: bgScroll 10s ease-in-out infinite alternate;">
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 17px; padding: 10px; position: relative; text-shadow: 0px 0px 10px rgba(255, 255, 255, 0.8);">
                 <div>
@@ -1921,6 +1909,20 @@ function openSongDetail(songIndex) {
         ${robotSpeech}
         ${previewAudio}
     `;
+}
+
+function openSongDetail(songIndex) {
+    currentSongDetailIndex = songIndex;
+    const song = allSongs[songIndex];
+    if (!song) return;
+    
+    const content = document.getElementById('songDetailContent');
+    
+    detailCopyBtn.onclick = function() {
+        copyToClipboard(song['曲名'] + '／' + song['アーティスト']);
+    };
+    
+    content.innerHTML = generateSongDetailHTML(song);
     
     document.getElementById('songDetailPopup').classList.remove('hidden');
 }
@@ -2193,28 +2195,14 @@ function showRandomResult(song) {
     const resultDiv = document.getElementById('randomResult');
     resultDiv.classList.remove('hidden');
 
-    const songIndex = allSongs.indexOf(song);
-    const tagsDisplay = createTagsHTML(song);
-    const ytLink = createYoutubeLink(song['最終演奏動画ID'], song['最終演奏タイムスタンプ']);
-    const date = song['最終演奏'] ? formatDate(song['最終演奏']) : '-';
     const copyText = song['曲名'] + '／' + song['アーティスト'];
-    const artworkStyle = song['アートワークURL']
-        ? `background: linear-gradient(rgba(255,255,255,0.82), rgba(255,255,255,0.82)), url('${escapeHtml(song['アートワークURL'])}') center/cover;`
-        : '';
 
     resultDiv.innerHTML = `
         <div class="random-result-label">🎲 選ばれた曲</div>
-        <div class="random-result-card" style="${artworkStyle}">
-            <div class="random-result-title">${escapeHtml(song['曲名'])}</div>
-            <div class="random-result-artist">${escapeHtml(song['アーティスト'])}</div>
-            <div class="random-result-meta">
-                <span>演奏回数: ${song['演奏回数'] || 0}回</span>
-                <span>最終演奏: ${date}${ytLink}</span>
-            </div>
-            ${tagsDisplay}
-            <div class="random-result-actions">
-                <button class="copy-button detail-btn-with-artwork" onclick="openSongDetail(${songIndex})">詳細</button>
-                <button class="copy-button" onclick="copyToClipboard('${escapeQuotes(copyText)}')">コピー</button>
+        <div class="random-result-card" style="text-align: left;">
+            ${generateSongDetailHTML(song)}
+            <div class="random-result-actions" style="border-top: 1px solid #e2e8f0; padding-top: 15px; margin-top: 15px;">
+                <button class="copy-button" onclick="copyToClipboard('${escapeQuotes(copyText)}')">曲名とアーティストをコピー</button>
             </div>
         </div>
     `;

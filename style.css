@@ -1937,11 +1937,8 @@ details.random-tag-section .tag-filter-options {
     border: 2px solid #667eea;
     border-radius: 14px;
     padding: 20px;
-    background: #f7f8ff;
+    background: white;
     box-shadow: 0 4px 16px rgba(102,126,234,0.15);
-    background-size: cover;
-    background-position: center bottom;
-    animation: bgScroll 10s ease-in-out infinite alternate;
 }
 
 .random-result-title {
