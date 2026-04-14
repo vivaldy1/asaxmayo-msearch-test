@@ -68,6 +68,7 @@
             <div style="flex-grow:1; display:flex; justify-content:center;">
                 <button id="tab-btn-search" class="tab-btn active" onclick="switchTab('search')">検索</button>
                 <button id="tab-btn-list" class="tab-btn" onclick="switchTab('list')">全曲一覧</button>
+                <button id="tab-btn-random" class="tab-btn" onclick="switchTab('random')">ランダム選曲</button>
             </div>
             <button id="settingsBtn" class="settings-icon-btn" onclick="showSettingsPopup()" title="設定">
                 <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor">
@@ -147,6 +148,26 @@
                 </table>
             </div>
             <div id="listPaginationBottom" class="pagination"></div>
+        </div>
+        <div id="random-tab" class="tab-content hidden">
+            <p class="random-description">タグを選ぶと絞り込んでランダム選曲できます。<br>タグ未選択の場合は全曲から選ばれます。</p>
+            <details class="random-tag-section">
+                <summary>季節</summary>
+                <div class="tag-filter-options" id="randomSeasonOptions"></div>
+            </details>
+            <details class="random-tag-section">
+                <summary>ジャンル</summary>
+                <div class="tag-filter-options" id="randomGenreOptions"></div>
+            </details>
+            <details class="random-tag-section">
+                <summary>年代</summary>
+                <div class="tag-filter-options" id="randomDecadeOptions"></div>
+            </details>
+            <div class="random-btn-row">
+                <button id="randomResetBtn" class="random-reset-btn" onclick="resetRandomTags()">タグリセット</button>
+                <button id="randomSpinBtn" class="random-spin-btn" onclick="spinRoulette()">🎲 ランダム選曲</button>
+            </div>
+            <div id="randomResult" class="random-result hidden"></div>
         </div>
     </div>
     <div id="aboutPopup" class="popup-overlay hidden" onclick="closeAboutPopup(event)">
@@ -432,6 +453,21 @@
             </div>
             <div class="popup-footer">
                 <button class="popup-ok-btn" onclick="closeThankYouPopup()">閉じる</button>
+            </div>
+        </div>
+    </div>
+    <!-- ルーレットオーバーレイ -->
+    <div id="rouletteOverlay" class="roulette-overlay hidden">
+        <div class="roulette-modal">
+            <div class="roulette-title">🎲 選曲中...</div>
+            <div class="roulette-window">
+                <div class="roulette-mask">
+                    <div id="rouletteTrack" class="roulette-track"></div>
+                </div>
+                <div class="roulette-highlight-box">
+                    <div class="roulette-arrow roulette-arrow-left">▶</div>
+                    <div class="roulette-arrow roulette-arrow-right">◀</div>
+                </div>
             </div>
         </div>
     </div>
